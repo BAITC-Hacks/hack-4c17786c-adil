@@ -10,9 +10,10 @@
 @media(max-width:430px){.nav-link{font-size:9px;padding:11px 6px;gap:5px}.nav-link .icon{width:14px;height:14px}.page-heading{flex-wrap:wrap;gap:8px}.page-heading .button{margin-top:0}.page-heading h1{font-size:24px}.metric-card>strong{font-size:24px}.agent-pipeline{grid-template-columns:1fr}.agent-pipeline p{font-size:9px}.agent-pipeline li:not(:last-child):before{display:block;top:46px;bottom:-15px}.form-grid{column-gap:13px}.field label{font-size:9px}.field small{font-size:7px}.mode-option>span{padding:10px 9px 10px 27px}.mode-option input{left:10px;top:13px}.mode-option .icon{display:none}.mode-option small{font-size:7px}.form-footer{font-size:7px}.data-metrics{grid-template-columns:1fr}.data-metrics .metric-top{font-size:10px}.data-metrics .metric-foot{font-size:8px}.result-metrics{padding:20px}.result-metric>strong{font-size:23px}.result-meta{padding:18px 20px 0}.result-actions{padding:0 20px 20px}.result-note{margin:0 20px 18px}.breadcrumb>strong{display:none}.result-panel .panel-heading{align-items:flex-end}.page-footer{gap:10px}.page-footer>span:last-child{display:none}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 
-/* Campaign Studio owns this CS monogram; Beeline is identified in plain text. */
-.studio-mark{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border-radius:12px;background:#e3ead6;border:1px solid #b3c498;color:#293827}
-.studio-mark svg{display:block;width:100%;height:100%;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+/* Original Beeline asset, embedded unchanged; preserve its square aspect ratio. */
+
+.beeline-mark{display:grid;place-items:center;flex-shrink:0;width:60px;height:60px;padding:10px;background:#fff;border-radius:8px}
+.beeline-mark img{display:block;width:40px;height:auto;max-width:none}
 .case-heading{align-items:flex-start;padding-bottom:24px;border-bottom:1px solid var(--line)}
 .case-heading-copy{min-width:0;max-width:760px}
 .case-context{display:flex;align-items:center;gap:10px 15px;flex-wrap:wrap;margin-bottom:17px}
@@ -23,8 +24,8 @@
 .case-heading p.partner-caption{font-size:12px;color:#59634f;margin-top:17px;line-height:1.6}
 .case-heading>.button{flex-shrink:0;margin-top:6px}
 .footer-attribution{display:inline-block;margin-top:7px;font-size:10px;color:#69745d}
-@media(max-width:1020px){.studio-mark{width:35px;height:35px;border-radius:10px}}
-@media(max-width:760px){.studio-mark{width:31px;height:31px;border-radius:9px}.case-heading h1{font-size:32px}.case-heading p.case-subtitle{font-size:16px}.case-context{gap:8px 12px}.case-heading{flex-wrap:wrap;gap:16px}.case-heading-copy{flex-basis:100%}.case-heading>.button{margin-top:0}.participant-label{font-size:11px}}
+
+@media(max-width:760px){.case-heading h1{font-size:32px}.case-heading p.case-subtitle{font-size:16px}.case-context{gap:8px 12px}.case-heading{flex-wrap:wrap;gap:16px}.case-heading-copy{flex-basis:100%}.case-heading>.button{margin-top:0}.participant-label{font-size:11px}}
 
 /* Product text stays readable at normal zoom, including compact layouts. */
 :root{--muted:#72796a}
@@ -60,3 +61,8 @@
 @media(max-width:760px){.journey-heading{padding:20px}.journey-heading .small-badge{display:none}.journey-steps{padding:0 20px 20px;gap:20px 14px}.journey-steps h3{font-size:12px}.overview-limits{gap:7px 10px}.overview-limits>span{border:0;padding:0}.overview-limits>strong{flex-basis:100%}.validation-card,.submission-card{margin-left:20px;margin-right:20px;padding:16px}.explanation-section{padding:20px}.explanation-card{padding:16px}.evidence-heading h3{font-size:13px}.live-pilots{padding:0 20px 20px}.validation-details .table-wrap{margin-left:-16px;margin-right:-16px;margin-bottom:-16px}}
 @media(max-width:430px){.journey-steps{grid-template-columns:1fr}.journey-heading h2{font-size:17px}.campaign-decisions{grid-template-columns:1fr;gap:12px}.campaign-decisions>div:first-child{grid-column:auto}.submission-card .button{width:100%;white-space:normal}.validation-card .evidence-heading{align-items:flex-start;flex-direction:column}.explanation-card{padding:14px}}
 .journey-steps p,.journey-steps .text-link,.journey-steps .text-button{font-size:12px}.journey-steps h3{font-size:13px}.journey-steps p{color:#58694a}
+
+/* Keep the official 40 px mark legible in compact navigation. */
+.brand{gap:12px;margin-left:0;margin-right:0}
+@media(max-width:1020px) and (min-width:761px){.brand{font-size:16px;gap:10px}}
+@media(max-width:760px){.brand{gap:12px}.beeline-mark{width:56px;height:56px;padding:8px}}
