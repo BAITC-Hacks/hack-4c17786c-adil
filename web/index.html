@@ -4,21 +4,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#171916">
-  <title>Campaign Studio — агентская система</title>
+  <meta name="description" content="Campaign Studio — решение участника HackAlem AI по кейсу Beeline: агентское планирование тарифных маркетинговых кампаний.">
+  <title>Campaign Studio — Кейс Beeline</title>
   <link rel="stylesheet" href="/styles.css">
   <script src="/app.js" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">Перейти к содержимому</a>
   <aside class="sidebar">
-    <a class="brand" href="#overview" aria-label="Campaign Studio, обзор"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Campaign<span class="brand-second">Studio<span class="brand-dot">.</span></span></span></a>
+    <a class="brand" href="#overview" aria-label="Campaign Studio, обзор"><span class="studio-mark" aria-hidden="true"><svg viewBox="0 0 48 48" fill="none"><path d="M22 16a9 9 0 1 0 0 16M38 17c-2-2-10-2-10 2 0 6 11 3 11 9 0 5-9 6-12 2"/></svg></span><span>Campaign<span class="brand-second">Studio<span class="brand-dot">.</span></span></span></a>
     <div class="workspace-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
     <nav class="nav" aria-label="Основная навигация">
       <a href="#overview" class="nav-link active" data-page="overview"><span class="icon" data-icon="grid"></span>Обзор<span class="nav-counter" id="sidebar-run-count">0</span></a>
       <a href="#history" class="nav-link" data-page="history"><span class="icon" data-icon="history"></span>История запусков</a>
       <a href="#data" class="nav-link" data-page="data"><span class="icon" data-icon="database"></span>Данные и проверки</a>
     </nav>
-    <div class="sidebar-bottom"><div class="case-card"><span class="case-kicker">BEELINE · AI CASE</span><strong>Больше смысла<br>в каждой кампании.</strong><span>Исследуйте. Проверяйте.<br>Выбирайте лучшее.</span><div class="case-wave" aria-hidden="true"></div></div><div class="local-label"><span class="status-dot"></span>Локальная среда<span>v1.0</span></div></div>
+    <div class="sidebar-bottom"><div class="case-card"><span class="case-kicker">Кейс Beeline</span><strong>Тарифные<br>маркетинговые кампании</strong><span>Решение участника<br>HackAlem AI</span></div><div class="local-label"><span class="status-dot"></span>Локальная среда<span>v1.0</span></div></div>
   </aside>
 
   <div class="app-shell">
@@ -27,7 +28,7 @@
       <div class="connection-error hidden" id="connection-error" role="alert"><span id="connection-error-text"></span><button type="button" class="text-button" id="reconnect-button">Повторить подключение</button></div>
 
       <section class="page" id="page-overview" aria-labelledby="overview-title">
-        <div class="page-heading"><div><div class="eyebrow">КАМПАНИИ ПОД КОНТРОЛЕМ</div><h1 id="overview-title">От гипотезы — к результату<span class="heading-dot">.</span></h1><p>Агенты исследуют аудиторию, проводят пилоты и собирают план кампаний.</p></div><button type="button" class="button button-outline" id="refresh-button"><span class="icon" data-icon="refresh"></span>Обновить</button></div>
+        <div class="page-heading case-heading"><div class="case-heading-copy"><div class="case-context"><span class="case-name">Кейс Beeline</span><span class="participant-label">Решение участника хакатона HackAlem AI</span></div><h1 id="overview-title">Campaign Studio<span class="heading-dot">.</span></h1><p class="case-subtitle">Тарифные кампании — от гипотезы до плана.</p><p>Агенты исследуют аудиторию, проводят пилоты и выбирают кампании в рамках бюджета.</p><p class="partner-caption">Beeline — официальный партнёр хакатона и заказчик кейса.</p></div><button type="button" class="button button-outline" id="refresh-button"><span class="icon" data-icon="refresh"></span>Обновить</button></div>
 
         <section class="journey panel" aria-labelledby="journey-title">
           <div class="journey-heading"><div><h2 id="journey-title">Первый план — за один запуск</h2><p>Исходные данные уже в проекте. Начните со стандартных настроек, затем сравните эксперименты.</p></div><span class="small-badge">Без API-ключей</span></div>
@@ -74,7 +75,7 @@
       <section class="page hidden" id="page-history" aria-labelledby="history-title"><div class="page-heading"><div><div class="eyebrow">ЭКСПЕРИМЕНТЫ И РЕШЕНИЯ</div><h1 id="history-title">История запусков<span class="heading-dot">.</span></h1><p>Возвращайтесь к результатам и сравнивайте настройки на одних данных.</p></div><a href="#overview" class="button button-primary"><span class="icon" data-icon="plus"></span>Новый запуск</a></div><div class="panel"><div class="panel-heading"><div><h2>Все запуски <span id="history-count" class="count-pill">0</span></h2><p class="panel-description">Выберите до трёх завершённых запусков для сравнения.</p></div><button type="button" class="button button-outline" id="compare-button" disabled>Сравнить <span id="compare-count">0</span>/3</button></div><div id="history-warnings" class="run-error hidden" role="status"></div><div id="history-content"></div></div><section id="comparison-panel" class="panel hidden comparison-panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title">Сравнение запусков</h2><button type="button" class="text-button" id="close-comparison">Закрыть</button></div><div id="comparison-content"></div></section><section class="panel hidden history-detail" id="history-detail" aria-labelledby="history-detail-title"><div class="panel-heading"><h2 id="history-detail-title">Результат запуска</h2><button type="button" class="text-button" id="close-detail">Закрыть</button></div><div id="history-detail-content"></div></section></section>
 
       <section class="page hidden" id="page-data" aria-labelledby="data-title"><div class="page-heading"><div><div class="eyebrow">ОСНОВА ДЛЯ РЕШЕНИЙ</div><h1 id="data-title">Данные и проверки<span class="heading-dot">.</span></h1><p>Контролируйте готовность данных и проверяйте корректность системы.</p></div><button type="button" class="button button-outline" id="prepare-button"><span class="icon" data-icon="refresh"></span>Подготовить данные</button></div><div id="data-summary" class="metrics-grid data-metrics"></div><div class="data-columns"><section class="panel"><div class="panel-heading"><h2>Сегменты аудитории</h2><span class="small-badge">ARPU</span></div><div class="segment-chart" id="segment-chart"></div></section><section class="panel"><div class="panel-heading"><h2>Проверка системы</h2><span class="icon panel-symbol" data-icon="shield"></span></div><div class="test-description"><h3>Уверенность перед запуском</h3><p>Запустите автоматические тесты агента и веб-приложения. Результаты и журнал проверки сохранятся в истории.</p><button type="button" class="button button-dark" id="tests-button"><span class="icon" data-icon="check"></span>Запустить тесты</button><div id="test-status" class="test-status" aria-live="polite"></div></div></section></div><section class="panel"><div class="panel-heading"><div><h2>Файлы кейса</h2><p class="panel-description">Данные из исходного пакета участника.</p></div><span id="data-readiness" class="small-badge">Проверка…</span></div><div id="data-files"></div></section><div class="constraint-note"><span class="icon" data-icon="info"></span><p>Лимиты зафиксированы по ТЗ: 100 000 у.е., 15 000 контактов, до 20 пилотов, до 10 кампаний и до 5 000 клиентов на кампанию. Каждый прогон получает собственные ресурсы.</p></div></section>
-      <footer class="page-footer"><span>Campaign Studio <span class="footer-separator">/</span> Beeline AI case</span><span>Локальная учебная среда</span></footer>
+      <footer class="page-footer"><span>Campaign Studio <span class="footer-separator">/</span> Кейс Beeline<br><span class="footer-attribution">Решение участника хакатона HackAlem AI</span></span><span>Локальная учебная среда</span></footer>
     </main>
   </div>
   <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
