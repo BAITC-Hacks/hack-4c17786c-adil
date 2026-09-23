@@ -62,6 +62,36 @@
   }
   function setRun(run) { if (!run || !run.id) return; const index = state.runs.findIndex(item => item.id === run.id); if (index < 0) state.runs.unshift(run); else state.runs[index] = { ...state.runs[index], ...run }; if (run.result || run.events) state.details.set(run.id, run); }
   function activeRun() { return state.runs.find(run => run.id === state.activeId && activeStatuses.has(run.status)) || state.runs.find(run => activeStatuses.has(run.status)); }
+  function filterLabel(filters = {}) {
+    const labels = { filter_current_tariff: "текущий тариф", filter_arpu_segment: "ARPU", filter_data_segment: "интернет", filter_call_segment: "звонки" };
+    const segments = { LOW: "низкий", MID: "средний", MEDIUM: "средний", HIGH: "высокий", NON_USER: "не использует", LITE: "умеренно", HEAVY: "активно" };
+    return Object.entries(labels).filter(([key]) => filters[key]).map(([key, label]) => `${label}: ${key === "filter_current_tariff" ? filters[key] : segments[filters[key]] || filters[key]}`).join(" · ") || "Вся подходящая аудитория";
+  }
+  function renderJourney() {
+    const data = state.overview?.dataset, run = activeRun() || state.details.get(state.displayedId);
+    const campaignRun = run?.mode !== "tests" ? run : null;
+    const ready = data?.ready === true, active = campaignRun && activeStatuses.has(campaignRun.status);
+    const finished = campaignRun?.status === "completed" && !campaignRun.result_error;
+    const checked = finished && isValidated(campaignRun.result?.validation);
+    $("#journey-data-text").textContent = ready ? `${num(data.files?.filter(file => file.valid === true).length)} файлов проверено. Аудитория: ${num(data.customers)}. Можно начинать.` : data ? "Запуск недоступен: исходные данные требуют проверки." : "Проверяем исходные файлы…";
+    $("#journey-data").classList.toggle("done", ready);
+    $("#journey-launch").classList.toggle("current", ready && !active && !finished);
+    $("#journey-pilots").classList.toggle("current", Boolean(active));
+    $("#journey-pilots").classList.toggle("done", Boolean(finished));
+    $("#journey-pilots-text").textContent = active ? `${(campaignRun.progress?.message || "Готовим исследование").replace(/[.\s]+$/, "")}. Выполнено пилотов в текущем прогоне: ${campaignRun.progress?.pilot_index || 0}.` : finished ? `Сохранено пилотов: ${num(campaignRun.summary?.total_pilots)}. Наблюдения доступны в результате.` : "Агент проверит гипотезы на небольших выборках. Результаты появятся по мере работы.";
+    $("#journey-result").classList.toggle("done", Boolean(checked));
+    $("#journey-result-text").textContent = checked ? submissionReady(campaignRun) ? "Ограничения проверены локально. Файл submission.csv готов к скачиванию." : "План проверен локально. Для submission.csv нужен стандартный прогон seed 42." : campaignRun?.result_error ? "Сохранённый результат не читается. Повторите расчёт." : finished ? "Расчёт сохранён. Подробная проверка ограничений в старом результате отсутствует." : "Изучите план и ограничения. Затем скачайте submission.csv из результата.";
+    $("#show-current-result").classList.toggle("hidden", !campaignRun);
+    $("#overview-data-error").classList.toggle("hidden", !data || ready);
+    $("#overview-data-error").textContent = data?.error || "Откройте «Данные и проверки» и подготовьте файлы кейса.";
+  }
+  function submissionConfigHint() {
+    const batch = $("input[name=mode]:checked").value === "batch";
+    const seed = Number($("#seed").value), runs = batch ? Number($("#batch-runs").value) : 1;
+    const includes42 = Number.isInteger(seed) && Number.isInteger(runs) && seed <= 42 && seed + runs > 42;
+    const eligible = includes42 && Number($("#max-pilots").value) === 20 && Number($("#time-limit").value) === 240;
+    $("#submission-config-hint").textContent = eligible ? batch ? "Серия включает seed 42: после проверки будет доступен submission.csv. План лучшего эксперимента может отличаться." : "Стандартный прогон для сдачи: после расчёта и проверки будет доступен submission.csv." : "Исследовательский запуск: получите отчёт и campaign_plan.csv. Для файла сдачи выберите стандартные настройки выше.";
+  }
   function updateControls() {
     const active = activeRun();
     const busy = state.posting || Boolean(active);
@@ -71,14 +101,19 @@
     $("#launch-label").textContent = state.posting ? "Создаём запуск…" : active ? "Агент уже работает" : $("input[name=mode]:checked").value === "batch" ? "Запустить серию" : "Запустить агента";
     $("#cancel-button").disabled = !active || state.posting;
     $("#refresh-button").disabled = state.refreshing;
+    $$("[data-submission-preset]").forEach(button => { button.disabled = busy; });
+    const blocker = !state.connected ? "Ожидаем соединения с локальным сервером." : !state.overview?.dataset?.ready ? "Сначала проверьте данные: причина указана в начале страницы." : active ? "Дождитесь завершения текущей задачи или остановите её." : "";
+    $("#launch-blocker").textContent = blocker;
+    $("#launch-blocker").classList.toggle("hidden", !blocker);
+    submissionConfigHint(); renderJourney();
   }
   function renderOverview() {
     const overview = state.overview;
     if (!overview) return;
-    $("#metric-audience").textContent = num(overview.dataset?.customers);
-    const completed = state.runs.filter(run => run.status === "completed").length;
+    $("#metric-audience").textContent = overview.dataset?.ready ? num(overview.dataset.customers) : "—";
+    const completed = state.runs.filter(run => run.status === "completed" && run.mode !== "tests").length;
     $("#metric-runs").textContent = num(completed);
-    $("#metric-runs-foot").textContent = `всего запусков: ${num(state.runs.length)} · история сохранена`;
+    $("#metric-runs-foot").textContent = "завершение не означает прибыль";
     $("#sidebar-run-count").textContent = state.runs.length;
     renderData(); renderHistory(); renderProcess(); updateControls();
   }
@@ -111,11 +146,41 @@
     }
     const test = state.runs.find(item => item.mode === "tests");
     $("#test-status").innerHTML = test ? `${statusBadge(test)} <span>${activeStatuses.has(test.status) ? "Автоматическая проверка выполняется…" : test.summary?.tests_passed === true ? `Пройдено тестов: ${num(test.summary.tests_run)}` : test.summary?.tests_passed === false ? `Ошибок проверок: ${num(test.summary.failures || 0)}; исключений: ${num(test.summary.errors || 0)}` : "Подробности доступны в истории"}</span> <button class="text-button" type="button" data-open-run="${esc(test.id)}">Открыть</button>` : "Результатов проверок пока нет.";
+    renderJourney();
   }
   function safeArtifactUrl(artifact, download = false) { try { const url = new URL(artifact.url, location.origin); if (url.origin !== location.origin || !url.pathname.startsWith("/api/runs/")) return null; if (download) url.searchParams.set("download", "1"); return url.pathname + url.search; } catch (_) { return null; } }
-  function artifactsHtml(run) { return (run.artifacts || []).map(artifact => { const html = artifact.name?.endsWith(".html"); const url = safeArtifactUrl(artifact, !html); return url ? `<a class="button ${html ? "button-dark" : "button-outline"}" href="${esc(url)}" ${html ? 'target="_blank" rel="noopener"' : 'download'}>${icon(html ? "arrow" : "download")}${esc(artifact.label || artifact.name)}</a>` : ""; }).join(""); }
+  function isValidated(validation) { return validation?.scope === "public_local_contract" && validation.status === "passed"; }
+  function submissionReady(run) { return run.result?.submission?.eligible === true && isValidated(run.result.submission.validation) && (run.artifacts || []).some(artifact => artifact.name === "submission.csv" && safeArtifactUrl(artifact, true)); }
+  function artifactsHtml(run) { return (run.artifacts || []).filter(artifact => !(artifact.name === "submission.csv" && submissionReady(run))).map(artifact => { const html = artifact.name?.endsWith(".html"); const url = safeArtifactUrl(artifact, !html); return url ? `<a class="button ${html ? "button-dark" : "button-outline"}" href="${esc(url)}" ${html ? 'target="_blank" rel="noopener"' : 'download'}>${icon(html ? "arrow" : "download")}${esc(artifact.label || artifact.name)}</a>` : ""; }).join(""); }
   function metric(label, value, foot, sign = false) { return `<div class="result-metric"><span>${esc(label)}</span><strong class="${sign && finite(value) ? value >= 0 ? "positive" : "negative" : ""}">${sign ? signed(value) : esc(value)}</strong><small>${esc(foot)}</small></div>`; }
   function table(headers, rows) { return `<div class="table-wrap"><table><thead><tr>${headers.map(title => `<th scope="col">${esc(title)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table></div>`; }
+  function checkValue(value) { return finite(value) ? num(value, 2) : typeof value === "string" ? esc(value) : "—"; }
+  function validationHtml(validation, seed) {
+    const checked = isValidated(validation);
+    const label = checked ? "Ограничения проверены" : validation?.status === "failed" ? "Проверка не пройдена" : "Подробная проверка не сохранена";
+    return `<section class="validation-card ${checked ? "verified" : "unverified"}" aria-label="Проверка результата"><div class="evidence-heading"><h3>${icon("shield")}${label}</h3><span class="small-badge ${checked ? "success" : "neutral"}">Seed ${esc(seed ?? "—")} · локально</span></div><p>${checked ? "План и ресурсы проверены по публичному контракту. Это не подтверждение прибыли и не результат скрытого судейства." : "Для этого результата нет полного подтверждения всех проверок. Повторите запуск, чтобы получить актуальную проверку."}</p>${Array.isArray(validation?.checks) ? `<details class="validation-details"><summary>Посмотреть проверки и фактические значения</summary>${table(["Проверка", "Результат", "Фактически", "Условие"], validation.checks.map(check => `<tr><td>${esc(check.label)}</td><td><span class="small-badge ${check.status === "passed" ? "success" : check.status === "failed" ? "failed" : "neutral"}">${check.status === "passed" ? "Пройдено" : check.status === "failed" ? "Ошибка" : "Не проверено"}</span></td><td>${checkValue(check.observed)}</td><td>${checkValue(check.limit)}</td></tr>`))}</details>` : ""}</section>`;
+  }
+  function submissionHtml(run) {
+    const submission = run.result?.submission;
+    const artifact = (run.artifacts || []).find(item => item.name === "submission.csv");
+    const url = artifact && safeArtifactUrl(artifact, true);
+    const available = submissionReady(run) && url;
+    return `<section class="submission-card" aria-label="Файл для сдачи"><div><h3>${available ? "Файл для сдачи готов" : "Нужен файл для сдачи?"}</h3><p>${available ? `submission.csv · seed ${esc(submission.seed)} · стандартные настройки. В серии этот файл может отличаться от плана выбранного эксперимента.` : esc(submission?.reason || "В старом результате нет отдельной записи о проверке файла сдачи. Повторите стандартный прогон seed 42, 20 пилотов, 240 секунд.")}</p></div>${available ? `<a class="button button-primary" href="${esc(url)}" download>${icon("download")}Скачать submission.csv</a>` : '<button type="button" class="button button-outline" data-submission-preset>Настроить прогон для сдачи</button>'}</section>`;
+  }
+  function explanationsHtml(explanations) {
+    if (!Array.isArray(explanations) || !explanations.length) return '<p class="result-note">Подробное обоснование не сохранено в этой версии результата. Доступные наблюдения находятся в разделе «Результаты пилотов».</p>';
+    return `<section class="explanation-section" aria-label="Почему выбран этот план"><div class="explanation-intro"><h3>Почему выбран этот план</h3><p>Кого, что и как — по данным именно этого запуска. Оценки пилотов содержат шум.</p></div>${explanations.map(item => {
+      const proof = item.pilot_evidence, forecast = item.forecast || {};
+      const evidence = proof ? `<p><strong>Основание:</strong> пилоты № ${esc((proof.pilot_indexes || []).join(", "))} · наблюдений: ${num(proof.pilot_count)} · ${num(proof.sample_contacts)} тестовых контактов (не уникальных клиентов).</p><p>Оценка относительного эффекта: <strong>${percent(proof.posterior_mean)}</strong>; стандартная ошибка: ${num(proof.standard_error * 100, 1)} п.п. Это оценка по пилотам, не гарантированный прирост.</p>${item.broader_segment ? `<p class="evidence-warning">Оценка перенесена с более широкого сегмента: ${esc(filterLabel(item.pilot_filters))}. Отдельный пилот этой узкой подгруппы не проводился.</p>` : '<p>Пилоты соответствуют сегменту, целевому тарифу и каналу этой кампании.</p>'}` : '<p class="evidence-warning"><strong>Нет сопоставимого пилота.</strong> Это резервный выбор без подтверждённого наблюдением эффекта; прибыль не гарантируется.</p>';
+      const alternatives = item.observed_alternatives || [];
+      return `<article class="explanation-card"><div class="evidence-heading"><h4>${esc(item.campaign_name || "Кампания")}</h4><span class="small-badge ${proof ? "neutral" : "failed"}">${proof ? "На основе пилотов" : "Резервный план"}</span></div><dl class="campaign-decisions"><div><dt>Кого</dt><dd>${esc(filterLabel(item.filters))}</dd><small>Прогноз охвата: ${num(forecast.expected_contacts)} из ${num(forecast.eligible_customers)} подходящих</small></div><div><dt>Что</dt><dd>Предложить ${esc(item.target_tariff)}</dd><small>${proof ? `Сопоставимых пилотов: ${num(proof.pilot_count)}` : "Пилот для этого выбора не подтверждён"}</small></div><div><dt>Как</dt><dd>${esc(({ push: "Push-уведомление", sms: "SMS", digital_ads: "Цифровая реклама", call: "Звонок" })[item.channel] || item.channel)}</dd><small>Прогноз расходов: ${num(forecast.expected_cost)} у.е.</small></div></dl><div class="pilot-evidence">${evidence}${item.reason ? `<p>${esc(item.reason)}</p>` : ""}${alternatives.length ? `<details><summary>Другие проверенные варианты: ${alternatives.length}</summary><ul>${alternatives.map(other => `<li>${esc(other.target_tariff)} · ${esc(other.channel)}: оценка ${percent(other.posterior_mean)}, ошибка ${num(other.standard_error * 100, 1)} п.п.; ${num(other.sample_contacts)} контактов.</li>`).join("")}</ul><p>Сравнение относится только к проверенным гипотезам этого сегмента. Лучший вариант среди всех возможных не доказан.</p></details>` : "<p>Прямое сравнение с другим тарифом или каналом для этого сегмента не сохранено. Выбор не доказывает глобальную оптимальность.</p>"}</div></article>`;
+    }).join("")}</section>`;
+  }
+  function livePilotsHtml(run) {
+    if (run.mode === "tests") return "";
+    const events = (run.events || []).filter(event => event.type === "pilot").slice(-3).reverse();
+    return `<div class="live-pilots"><h3>Последние пилоты</h3><p>Это шумные наблюдения небольшой выборки. Итог оценщика появится после расчёта.</p>${events.length ? events.map(event => `<article><strong>${run.mode === "batch" ? `Прогон ${esc(event.trial_index)} · ` : ""}Пилот ${esc(event.pilot_index)} · ${esc(event.target_tariff)} · ${esc(event.channel)}</strong><span>${esc(event.filters ? filterLabel(event.filters) : "Сегмент не сохранён в событии")}</span><span>${event.error ? `Ошибка наблюдения: ${esc(event.error)}` : `${num(event.n_customers)} контактов · наблюдаемый эффект ${percent(event.observed_lift_ratio)} · стоимость ${num(event.cost)} у.е.`}</span></article>`).join("") : '<p class="muted">Готовим гипотезы. Здесь будут появляться завершённые пилоты.</p>'}</div>`;
+  }
   function eventLog(run) {
     const events = run.events || [];
     if (!events.length) return "";
@@ -135,7 +200,7 @@
     const selected = trials.find(trial => trial.seed === result.selected_seed) || trials[0];
     const report = selected?.report || {}, score = selected?.score || {};
     const meta = `<div class="result-meta"><strong>${esc(modeLabel(run.mode))}</strong>${statusBadge(run)}<span>${date(run.created_at)}</span>${run.mode !== "tests" ? `<span>Seed ${esc(run.config?.seed ?? "—")}${run.mode === "batch" ? ` · прогонов: ${num(run.config?.runs)}` : ""}</span>` : ""}<span>${esc(duration(summary.total_runtime_seconds))}</span></div>`;
-    if (activeStatuses.has(run.status)) return meta + loading(run.progress?.message || "Запуск выполняется. Результат обновится автоматически.") + `<div class="result-actions"><button class="button button-outline" type="button" data-cancel-run="${esc(run.id)}" ${state.posting ? "disabled" : ""}>Остановить запуск</button></div>` + eventLog(run);
+    if (activeStatuses.has(run.status)) return meta + loading(run.progress?.message || "Запуск выполняется. Результат обновится автоматически.") + livePilotsHtml(run) + `<div class="result-actions"><button class="button button-outline" type="button" data-cancel-run="${esc(run.id)}" ${state.posting ? "disabled" : ""}>Остановить запуск</button></div>` + eventLog(run);
     if (run.result_error) return meta + `<div class="run-error" role="alert"><strong>Сохранённый результат недоступен</strong><p>${esc(run.result_error)}</p><p>Исходные файлы сохранены. Можно повторить запуск с теми же настройками.</p></div><div class="result-actions"><button type="button" class="button button-outline" data-repeat-run="${esc(run.id)}">${icon("refresh")}Повторить настройки</button></div>` + eventLog(run);
     let content = meta;
     if (run.mode === "tests") {
@@ -146,6 +211,8 @@
       const batch = run.mode === "batch";
       content += `<div class="result-metrics">${metric(batch ? "Средний чистый эффект" : "Чистый эффект", batch ? summary.mean_net : score.net_arpu_gain, "у.е. · учебный скоринг", true)}${metric(batch ? "Положительных прогонов" : "Расходы на связь", batch ? `${num(summary.positive_runs)} / ${num(summary.trials)}` : num(score.total_cost), batch ? "из всей серии" : "у.е. · пилоты + кампании")}${metric(batch ? "Минимальный эффект" : "Контактов использовано", batch ? signed(summary.min_net) : num(score.total_contacts), batch ? "у.е. · в серии" : "пилоты + кампании")}${metric(batch ? "Максимальный эффект" : "Итоговых кампаний", batch ? signed(summary.max_net) : num(selected.campaigns?.length), batch ? "у.е. · в серии" : `проведено пилотов: ${num(report.pilots?.length || 0)}`)}</div>`;
       content += '<p class="result-note">Результат рассчитан локальной учебной средой. Прогноз агента и результат оценщика — разные величины; итог скрытого судейского скоринга может отличаться.</p>';
+      if (score.net_arpu_gain <= 0) content += '<p class="result-note evidence-warning">Локальный итог выбранного прогона неположительный. Расчёт может быть технически корректным и соблюдать ограничения, но это не делает план прибыльным.</p>';
+      content += validationHtml(selected.validation || result.validation, selected.seed) + submissionHtml(run);
     }
     if (run.error) content += `<div class="run-error"><strong>Запуск завершился с ошибкой</strong><p>${esc(run.error)}</p></div>`;
     else if (!selected && run.mode !== "tests") content += empty(run.status === "cancelled" ? "Запуск остановлен" : run.status === "interrupted" ? "Запуск был прерван" : "Результат не сформирован", "Можно повторить запуск с теми же настройками.");
@@ -156,6 +223,7 @@
     }
     if (selected) {
       const campaigns = report.campaigns || selected.campaigns || [];
+      content += explanationsHtml(selected.explanations || result.explanations);
       content += `<div class="detail-section"><h3>План кампаний${trials.length > 1 ? ` · seed ${esc(selected.seed)}` : ""}</h3>${campaigns.length ? table(["Сегмент / кампания", "Тариф", "Канал", "Охват", "Прогноз эффекта, у.е."], campaigns.map(c => `<tr><td><span class="row-title">${esc(c.campaign_name || "Кампания")}</span><span class="row-subtitle">${esc([c.filter_current_tariff, c.filter_arpu_segment, c.filter_data_segment, c.filter_call_segment].filter(Boolean).join(" · ") || "Вся подходящая аудитория")}</span></td><td>${esc(c.target_tariff)}</td><td><span class="channel-tag">${esc(c.channel)}</span></td><td>${num(c.expected_contacts)}</td><td>${signed(c.expected_net_gain)}</td></tr>`)) : empty("Выгодные кампании не найдены", "Агент не выбрал кампании в рамках текущих оценок и ограничений.")}</div>`;
       if (campaigns.some(c => c.reason)) content += `<details class="section-toggle"><summary>Почему выбраны эти кампании</summary><ul>${campaigns.filter(c => c.reason).map(c => `<li><strong>${esc(c.campaign_name)}:</strong> ${esc(c.reason)}</li>`).join("")}</ul></details>`;
       const pilots = report.pilots || [];
@@ -208,7 +276,7 @@
   function renderData() {
     const data = state.overview?.dataset;
     if (!data) return;
-    $("#data-summary").innerHTML = [["Клиентов", num(data.customers), "целевая аудитория"], ["Тарифов", num(data.tariff_count), "в исходном справочнике"], ["Средний ARPU", data.customers ? num(data.baseline_arpu / data.customers) : "—", "у.е. · прогноз из профилей"]].map(([label, value, foot]) => `<article class="metric-card"><div class="metric-top">${label}</div><strong>${value}</strong><span class="metric-foot">${foot}</span></article>`).join("");
+    $("#data-summary").innerHTML = [["Клиентов", data.ready ? num(data.customers) : "—", "целевая аудитория"], ["Тарифов", data.ready ? num(data.tariff_count) : "—", "в исходном справочнике"], ["Средний ARPU", data.ready && data.customers ? num(data.baseline_arpu / data.customers) : "—", "у.е. · прогноз из профилей"]].map(([label, value, foot]) => `<article class="metric-card"><div class="metric-top">${label}</div><strong>${value}</strong><span class="metric-foot">${foot}</span></article>`).join("");
     const segments = data.segments?.arpu || [], max = Math.max(...segments.map(item => item.count), 1);
     const labels = { HIGH: "Высокий ARPU", MID: "Средний ARPU", LOW: "Низкий ARPU" };
     $("#segment-chart").innerHTML = segments.length ? segments.map(segment => `<div class="segment-row"><div class="segment-caption"><span>${esc(labels[segment.name] || segment.name)}</span><strong>${num(segment.count)} <span class="muted">· ${num(segment.count / data.customers * 100, 1)}%</span></strong></div><div class="segment-track"><div class="segment-fill" style="width:${Math.max(0, Math.min(100, segment.count / max * 100))}%"></div></div></div>`).join("") + '<p class="segment-legend">По заполненным значениям сегмента в профилях клиентов.</p>' : empty("Данные ещё не готовы", "Подготовьте файлы кейса для первого запуска.", "database");
@@ -284,6 +352,18 @@
     const radio = $(`input[name="mode"][value="${run.mode === "batch" ? "batch" : "single"}"]`); radio.checked = true; updateMode(); location.hash = "overview"; setPage(); $("#launch-title").scrollIntoView({ behavior: "smooth", block: "center" }); toast("Настройки перенесены. Можно изменить их и запустить снова.");
   }
   function updateMode() { const batch = $("input[name=mode]:checked").value === "batch"; $("#batch-field").classList.toggle("hidden", !batch); $("#single-note").classList.toggle("hidden", batch); $("#batch-runs").required = batch; $("#batch-runs").disabled = !batch; updateControls(); }
+  function submissionPreset() {
+    if (state.posting || activeRun()) return;
+    $('input[name="mode"][value="single"]').checked = true;
+    $("#seed").value = 42; $("#max-pilots").value = 20; $("#time-limit").value = 240;
+    $("#run-form-error").classList.add("hidden");
+    updateMode(); location.hash = "overview"; setPage();
+    $("#launch-title").scrollIntoView({ behavior: "smooth", block: "center" });
+    $("#seed").focus({ preventScroll: true });
+    toast("Стандартные настройки установлены. Нажмите «Запустить агента».");
+  }
+  $("#run-form").addEventListener("input", submissionConfigHint);
+  $("#show-current-result").addEventListener("click", () => { $("#result-panel").scrollIntoView({ behavior: "smooth", block: "start" }); $("#result-title").setAttribute("tabindex", "-1"); $("#result-title").focus({ preventScroll: true }); });
   $("#run-form").addEventListener("submit", event => { event.preventDefault(); if (!event.currentTarget.reportValidity()) return; const mode = $("input[name=mode]:checked").value; createRun({ mode, seed: Number($("#seed").value), max_pilots: Number($("#max-pilots").value), time_limit_seconds: Number($("#time-limit").value), runs: mode === "batch" ? Number($("#batch-runs").value) : 1 }); });
   $$("input[name=mode]").forEach(el => el.addEventListener("change", updateMode));
   $("#refresh-button").addEventListener("click", refresh); $("#reconnect-button").addEventListener("click", refresh);
@@ -302,6 +382,7 @@
   }
   $("#cancel-button").addEventListener("click", () => cancelRun(activeRun()?.id));
   document.addEventListener("click", event => {
+    const preset = event.target.closest("[data-submission-preset]"); if (preset) { submissionPreset(); return; }
     const open = event.target.closest("[data-open-run]"); if (open) { showHistoryDetail(open.dataset.openRun); return; }
     const repeat = event.target.closest("[data-repeat-run]"); if (repeat) { repeatRun(repeat.dataset.repeatRun); return; }
     const cancel = event.target.closest("[data-cancel-run]"); if (cancel) { cancelRun(cancel.dataset.cancelRun); return; }

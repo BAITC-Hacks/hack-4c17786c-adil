@@ -1,0 +1,682 @@
+{
+  "date": "2026-09-23",
+  "decision": "unchanged",
+  "decision_reason": "Neither candidate demonstrates sufficient overall benefit. Late confirmation introduces a negative development run and lowers results; 2-SE improves the weak seed3 but substantially lowers other completed results and invokes a slower fallback. No agent policy or submission was changed.",
+  "scope": "Synthetic local evaluator only. Different seeds vary public noisy pilots; the additional 10–29 series does not test a different hidden effect model and cannot predict judging scores.",
+  "requirements": {
+    "mandatory": [
+      "D1/D2/D3 §7.2: 1–10 valid campaigns",
+      "D1/D2/D3 §7.3: pilots and decisions based on their outcomes",
+      "D1/D2/D3 §7.4 and §9: simultaneous resource limits and public-interface-only access"
+    ],
+    "optional": [
+      "D1/D2/D3 §8: uncertainty-aware decisions and stability across seed runs"
+    ],
+    "rubric": "D1 technical implementation criterion is 25/100; this review does not claim any jury points."
+  },
+  "method": {
+    "evaluator": "Unmodified local_eval.evaluate_agent(agent, seed=seed, verbose=False)",
+    "agent": "Unmodified agent.Agent, default 20 pilots and 240-second cooperative deadline",
+    "baseline_seeds_0_9": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "additional_seeds_10_29": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29
+    ],
+    "no_seed_42_tuning": true,
+    "raw_contract_checks": [
+      "Raw return is 1–10 campaigns and passes public scoring_core.validate_strategy before evaluator sanitization",
+      "Scored campaign count equals pilot count plus returned final count",
+      "1–20 pilots; each report observation has 10–200 customers",
+      "Total cost <=100000; total contacts <=15000",
+      "Every scored campaign has 1–5000 contacts"
+    ],
+    "model_access": "Research imports only the public evaluator function; it does not inspect mock effect code, model values, closures or hidden environment attributes. Candidate policies use only current state and pilot statistics.",
+    "candidate_execution": "Each candidate was monkeypatched in a separate temporary process; working agent files and organizer files were not edited. Processes ran concurrently, so runtime comparisons are descriptive rather than controlled performance benchmarks.",
+    "baseline_code_sha256": {
+      "agent.py": "fc4c8d3becac35202961063cd364cef713e0e894e05e5e1b879498c7399a997a",
+      "campaign_agents\\__init__.py": "8648c7dbeef9b0bc94c37ec636e6db9901be76ed8e97e8d67cc2314fd7f03801",
+      "campaign_agents\\analyst.py": "9184c6ea38ba4514cf638c9be2631ce410c459cc764669d7d1163fdf09780277",
+      "campaign_agents\\experimenter.py": "f49e2b9dfda36a754725bc61913a683772a0caa4aed8bb568eeabfd96d70b5f7",
+      "campaign_agents\\models.py": "09dc9607d9b65a8ef0c4a1c75b0215adb5d8ddd08f19d59cd034bc524260f36c",
+      "campaign_agents\\optimizer.py": "511013f4f135d6a6ff3461d31dea961008165efaec196fed3200f4f7af808dde",
+      "campaign_agents\\validator.py": "1f3e86acb5a1189181126e872708620010db296dd8a9b3977576862d8c702d3e"
+    }
+  },
+  "baseline": {
+    "runs": [
+      {
+        "seed": 0,
+        "net_arpu_gain": 536726.412615825,
+        "total_cost": 18680.0,
+        "total_contacts": 4320,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.264999999999418,
+        "status": "PASS"
+      },
+      {
+        "seed": 1,
+        "net_arpu_gain": 656639.8203133931,
+        "total_cost": 49640.0,
+        "total_contacts": 4320,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 2.1719999999986612,
+        "status": "PASS"
+      },
+      {
+        "seed": 2,
+        "net_arpu_gain": 762951.8702543452,
+        "total_cost": 56236.0,
+        "total_contacts": 13809,
+        "pilots": 20,
+        "final_campaigns": 5,
+        "runtime_seconds": 2.438000000001921,
+        "status": "PASS"
+      },
+      {
+        "seed": 3,
+        "net_arpu_gain": 1795.7631431834307,
+        "total_cost": 21000.0,
+        "total_contacts": 5550,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.5,
+        "status": "PASS"
+      },
+      {
+        "seed": 4,
+        "net_arpu_gain": 54691.41967505909,
+        "total_cost": 48756.0,
+        "total_contacts": 11239,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 2.389999999999418,
+        "status": "PASS"
+      },
+      {
+        "seed": 5,
+        "net_arpu_gain": 224706.10181749915,
+        "total_cost": 41536.0,
+        "total_contacts": 9434,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.375,
+        "status": "PASS"
+      },
+      {
+        "seed": 6,
+        "net_arpu_gain": 639238.1117610501,
+        "total_cost": 38384.0,
+        "total_contacts": 9046,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.3909999999996217,
+        "status": "PASS"
+      },
+      {
+        "seed": 7,
+        "net_arpu_gain": 536095.2188254041,
+        "total_cost": 18680.0,
+        "total_contacts": 4320,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.1409999999996217,
+        "status": "PASS"
+      },
+      {
+        "seed": 8,
+        "net_arpu_gain": 881962.479699302,
+        "total_cost": 45380.0,
+        "total_contacts": 11295,
+        "pilots": 20,
+        "final_campaigns": 4,
+        "runtime_seconds": 1.6709999999984575,
+        "status": "PASS"
+      },
+      {
+        "seed": 9,
+        "net_arpu_gain": 202068.75921026632,
+        "total_cost": 40988.0,
+        "total_contacts": 10397,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 1.625,
+        "status": "PASS"
+      },
+      {
+        "seed": 10,
+        "net_arpu_gain": 542307.1753602701,
+        "total_cost": 18680.0,
+        "total_contacts": 4320,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.2029999999977008,
+        "status": "PASS"
+      },
+      {
+        "seed": 11,
+        "net_arpu_gain": 148549.1773120967,
+        "total_cost": 52592.0,
+        "total_contacts": 11298,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 1.3280000000013388,
+        "status": "PASS"
+      },
+      {
+        "seed": 12,
+        "net_arpu_gain": 172988.38220284248,
+        "total_cost": 41536.0,
+        "total_contacts": 9434,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.3129999999982829,
+        "status": "PASS"
+      },
+      {
+        "seed": 13,
+        "net_arpu_gain": 119388.35165085207,
+        "total_cost": 76680.0,
+        "total_contacts": 9434,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.9370000000017171,
+        "status": "PASS"
+      },
+      {
+        "seed": 14,
+        "net_arpu_gain": 1019825.6807369401,
+        "total_cost": 54712.0,
+        "total_contacts": 12928,
+        "pilots": 20,
+        "final_campaigns": 5,
+        "runtime_seconds": 2.5319999999992433,
+        "status": "PASS"
+      },
+      {
+        "seed": 15,
+        "net_arpu_gain": 605290.3309601784,
+        "total_cost": 43836.0,
+        "total_contacts": 10009,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 1.7959999999984575,
+        "status": "PASS"
+      },
+      {
+        "seed": 16,
+        "net_arpu_gain": 538516.0044644894,
+        "total_cost": 26712.0,
+        "total_contacts": 6428,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.4690000000009604,
+        "status": "PASS"
+      },
+      {
+        "seed": 17,
+        "net_arpu_gain": 229833.8278095218,
+        "total_cost": 33104.0,
+        "total_contacts": 7326,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.9530000000013388,
+        "status": "PASS"
+      },
+      {
+        "seed": 18,
+        "net_arpu_gain": 571805.1626584865,
+        "total_cost": 31620.0,
+        "total_contacts": 7655,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 1.7190000000009604,
+        "status": "PASS"
+      },
+      {
+        "seed": 19,
+        "net_arpu_gain": 237451.48156092787,
+        "total_cost": 33504.0,
+        "total_contacts": 7326,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.375,
+        "status": "PASS"
+      },
+      {
+        "seed": 20,
+        "net_arpu_gain": -64890.97521432072,
+        "total_cost": 25200.0,
+        "total_contacts": 5550,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.1089999999967404,
+        "status": "FAIL"
+      },
+      {
+        "seed": 21,
+        "net_arpu_gain": 168547.6355916703,
+        "total_cost": 14200.0,
+        "total_contacts": 7326,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.5470000000022992,
+        "status": "PASS"
+      },
+      {
+        "seed": 22,
+        "net_arpu_gain": 702300.4598898704,
+        "total_cost": 48416.0,
+        "total_contacts": 11154,
+        "pilots": 20,
+        "final_campaigns": 3,
+        "runtime_seconds": 1.75,
+        "status": "PASS"
+      },
+      {
+        "seed": 23,
+        "net_arpu_gain": 627754.6126121744,
+        "total_cost": 39184.0,
+        "total_contacts": 9046,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.4069999999992433,
+        "status": "PASS"
+      },
+      {
+        "seed": 24,
+        "net_arpu_gain": 535259.2225343895,
+        "total_cost": 37184.0,
+        "total_contacts": 9046,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.3280000000013388,
+        "status": "PASS"
+      },
+      {
+        "seed": 25,
+        "net_arpu_gain": 138108.87782202676,
+        "total_cost": 16308.0,
+        "total_contacts": 3827,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.4219999999986612,
+        "status": "PASS"
+      },
+      {
+        "seed": 26,
+        "net_arpu_gain": 116111.77577805918,
+        "total_cost": 19832.0,
+        "total_contacts": 5935,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 1.4530000000013388,
+        "status": "PASS"
+      },
+      {
+        "seed": 27,
+        "net_arpu_gain": 544560.6316235912,
+        "total_cost": 18680.0,
+        "total_contacts": 4320,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.4219999999986612,
+        "status": "PASS"
+      },
+      {
+        "seed": 28,
+        "net_arpu_gain": 180936.67457867938,
+        "total_cost": 36392.0,
+        "total_contacts": 8348,
+        "pilots": 20,
+        "final_campaigns": 2,
+        "runtime_seconds": 2.062000000001717,
+        "status": "PASS"
+      },
+      {
+        "seed": 29,
+        "net_arpu_gain": 48475.62544360844,
+        "total_cost": 21800.0,
+        "total_contacts": 5550,
+        "pilots": 20,
+        "final_campaigns": 1,
+        "runtime_seconds": 1.9529999999977008,
+        "status": "PASS"
+      }
+    ],
+    "series_0_9": {
+      "runs": 10,
+      "positive_runs": 10,
+      "minimum_net": 1795.7631431834307,
+      "median_net": 536410.8157206145,
+      "maximum_net": 881962.479699302,
+      "mean_net": 449687.5957315327,
+      "maximum_runtime_seconds": 2.438000000001921
+    },
+    "additional_series_10_29": {
+      "runs": 20,
+      "positive_runs": 19,
+      "minimum_net": -64890.97521432072,
+      "median_net": 233642.65468522484,
+      "maximum_net": 1019825.6807369401,
+      "mean_net": 359156.00576881773,
+      "maximum_runtime_seconds": 2.5319999999992433
+    }
+  },
+  "candidates": [
+    {
+      "name": "late_confirmation",
+      "definition": "For the final four configured pilot steps, before normal choose(), confirm the observed available arm with maximal (mean-standard_error)*arpu_sum - size*channel_cost, requiring mean>standard_error, n<600, trials<4. Otherwise use the original policy. All sampling sizes, budget limits and final selection stay unchanged.",
+      "adopted": false,
+      "complete": false,
+      "stopped_reason": "Stopped after observed regressions; only completed runs below are reported. In-flight runs were cancelled and are excluded. No completed seed was rerun.",
+      "actual_seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "metric_precision": "Candidate net and runtime were preserved from completed stdout lines (4 and 3 decimals respectively) before cancelling owned research sessions. Baseline has full JSON precision.",
+      "runs": [
+        {
+          "seed": 0,
+          "net_arpu_gain": 253036.5873,
+          "runtime_seconds": 28.766,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -283689.82531582494
+        },
+        {
+          "seed": 1,
+          "net_arpu_gain": 544893.7966,
+          "runtime_seconds": 1.531,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -111746.02371339314
+        },
+        {
+          "seed": 2,
+          "net_arpu_gain": 373938.918,
+          "runtime_seconds": 1.734,
+          "pilots": 20,
+          "final_campaigns": 2,
+          "delta_net_vs_baseline": -389012.95225434523
+        },
+        {
+          "seed": 3,
+          "net_arpu_gain": -1083.7928,
+          "runtime_seconds": 1.485,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -2879.555943183431
+        },
+        {
+          "seed": 4,
+          "net_arpu_gain": 34635.0946,
+          "runtime_seconds": 27.156,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -20056.325075059096
+        },
+        {
+          "seed": 5,
+          "net_arpu_gain": 86720.6832,
+          "runtime_seconds": 29.828,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -137985.41861749915
+        },
+        {
+          "seed": 6,
+          "net_arpu_gain": 560430.3573,
+          "runtime_seconds": 1.828,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -78807.75446105003
+        },
+        {
+          "seed": 7,
+          "net_arpu_gain": 201788.1512,
+          "runtime_seconds": 41.172,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -334307.0676254041
+        },
+        {
+          "seed": 8,
+          "net_arpu_gain": 320702.8255,
+          "runtime_seconds": 2.828,
+          "pilots": 20,
+          "final_campaigns": 2,
+          "delta_net_vs_baseline": -561259.654199302
+        },
+        {
+          "seed": 9,
+          "net_arpu_gain": 138392.6592,
+          "runtime_seconds": 3.578,
+          "pilots": 20,
+          "final_campaigns": 3,
+          "delta_net_vs_baseline": -63676.100010266324
+        },
+        {
+          "seed": 10,
+          "net_arpu_gain": 170825.6127,
+          "runtime_seconds": 38.703,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -371481.5626602701
+        },
+        {
+          "seed": 11,
+          "net_arpu_gain": 113259.334,
+          "runtime_seconds": 32.734,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -35289.843312096695
+        }
+      ],
+      "summary_actual_seeds": {
+        "runs": 12,
+        "positive_runs": 11,
+        "minimum_net": -1083.7928,
+        "median_net": 186306.88195,
+        "maximum_net": 560430.3573,
+        "mean_net": 233128.35223333334,
+        "maximum_runtime_seconds": 41.172
+      },
+      "baseline_same_actual_seeds": {
+        "runs": 12,
+        "positive_runs": 12,
+        "minimum_net": 1795.7631431834307,
+        "median_net": 536410.8157206145,
+        "maximum_net": 881962.479699302,
+        "mean_net": 432311.0258323079,
+        "maximum_runtime_seconds": 2.438000000001921
+      },
+      "summary_completed_0_9": {
+        "runs": 10,
+        "positive_runs": 9,
+        "minimum_net": -1083.7928,
+        "median_net": 227412.36925,
+        "maximum_net": 560430.3573,
+        "mean_net": 251345.52801,
+        "maximum_runtime_seconds": 41.172
+      },
+      "constraints_passed_for_every_completed_run": true
+    },
+    {
+      "name": "two_standard_errors",
+      "definition": "Keep all pilots unchanged. In Optimizer.plan replace both arm.mean - arm.standard_error terms (candidate eligibility and conservative final priority) with arm.mean - 2*arm.standard_error. All other logic, including fallback, stays unchanged.",
+      "adopted": false,
+      "complete": false,
+      "stopped_reason": "Stopped after observed regressions; only completed runs below are reported. In-flight runs were cancelled and are excluded. No completed seed was rerun.",
+      "actual_seeds": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "metric_precision": "Candidate net and runtime were preserved from completed stdout lines (4 and 3 decimals respectively) before cancelling owned research sessions. Baseline has full JSON precision.",
+      "runs": [
+        {
+          "seed": 0,
+          "net_arpu_gain": 113922.9953,
+          "runtime_seconds": 26.047,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -422803.41731582495
+        },
+        {
+          "seed": 1,
+          "net_arpu_gain": 113817.047,
+          "runtime_seconds": 27.5,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -542822.7733133931
+        },
+        {
+          "seed": 2,
+          "net_arpu_gain": 66004.7969,
+          "runtime_seconds": 35.015,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -696947.0733543453
+        },
+        {
+          "seed": 3,
+          "net_arpu_gain": 48845.8543,
+          "runtime_seconds": 42.703,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": 47050.09115681657
+        },
+        {
+          "seed": 4,
+          "net_arpu_gain": 61087.2601,
+          "runtime_seconds": 37.547,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": 6395.840424940907
+        },
+        {
+          "seed": 5,
+          "net_arpu_gain": 72370.5552,
+          "runtime_seconds": 30.531,
+          "pilots": 20,
+          "final_campaigns": 1,
+          "delta_net_vs_baseline": -152335.54661749915
+        }
+      ],
+      "summary_actual_seeds": {
+        "runs": 6,
+        "positive_runs": 6,
+        "minimum_net": 48845.8543,
+        "median_net": 69187.67605000001,
+        "maximum_net": 113922.9953,
+        "mean_net": 79341.41813333334,
+        "maximum_runtime_seconds": 42.703
+      },
+      "baseline_same_actual_seeds": {
+        "runs": 6,
+        "positive_runs": 6,
+        "minimum_net": 1795.7631431834307,
+        "median_net": 380716.25721666205,
+        "maximum_net": 762951.8702543452,
+        "mean_net": 372918.56463655084,
+        "maximum_runtime_seconds": 2.438000000001921
+      },
+      "summary_completed_0_9": {
+        "runs": 6,
+        "positive_runs": 6,
+        "minimum_net": 48845.8543,
+        "median_net": 69187.67605000001,
+        "maximum_net": 113922.9953,
+        "mean_net": 79341.41813333334,
+        "maximum_runtime_seconds": 42.703
+      },
+      "constraints_passed_for_every_completed_run": true
+    }
+  ],
+  "weak_runs": [
+    {
+      "seed": 3,
+      "public_evaluator_net": 1795.7631431834307,
+      "final_campaign": {
+        "campaign_name": "campaign_01",
+        "filter_current_tariff": "tariff_10",
+        "filter_arpu_segment": "HIGH",
+        "target_tariff": "tariff_19",
+        "channel": "sms"
+      },
+      "pilot_sample_contacts": 300,
+      "matching_pilot_calls": 2,
+      "posterior_mean": 0.08246662615056272,
+      "standard_error": 0.04563891513631318,
+      "agent_final_campaign_forecast": 1740224.9259039196,
+      "note": "The agent forecast is for incremental final-campaign gain after pilots; evaluator net is for the entire run with deduplication. They are different quantities and neither the pilot observation nor the forecast guarantees profit."
+    },
+    {
+      "seed": 20,
+      "public_evaluator_net": -64890.97521432072,
+      "final_campaign": {
+        "campaign_name": "campaign_01",
+        "filter_current_tariff": "tariff_10",
+        "filter_arpu_segment": "HIGH",
+        "target_tariff": "tariff_12",
+        "channel": "sms"
+      },
+      "pilot_sample_contacts": 100,
+      "matching_pilot_calls": 1,
+      "posterior_mean": 0.09626623697064025,
+      "standard_error": 0.07653927286408278,
+      "agent_final_campaign_forecast": 2237049.9046279755,
+      "note": "A single noisy observation passed the existing mean-minus-one-standard-error rule. The full local run is negative despite the optimistic forecast."
+    }
+  ],
+  "remaining_limitations": [
+    "Baseline is positive on 10/10 seeds0–9 but only19/20 additional seeds10–29. Robustness to noisy pilots remains incomplete.",
+    "Candidates were stopped early after regressions; no full30-run comparison or superiority claim is made.",
+    "No new hidden-effect model or jury environment was tested.",
+    "Cooperative agent deadlines do not preempt individual synchronous environment or pandas calls."
+  ]
+}

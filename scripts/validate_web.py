@@ -72,10 +72,22 @@ def main():
                         assert 1 <= len(trial["campaigns"]) <= 10
                         assert trial["score"]["total_cost"] <= 100000
                         assert trial["score"]["total_contacts"] <= 15000
+                        assert trial["validation"]["status"] == "passed"
+                        assert trial["validation"]["scope"] == "public_local_contract"
+                        assert trial["validation"]["hidden_judging"] == "not_checked"
+                        assert all(check["status"] == "passed" for check in trial["validation"]["checks"])
+                        assert len(trial["explanations"]) == len(trial["campaigns"])
+                        assert 0 <= trial["agent_runtime_seconds"] < 300
+                    assert job["result"]["submission"]["reproduction"] == "not_checked_in_this_run"
+                    assert any("filters" in event for event in job["events"] if event["type"] == "pilot")
                     if config["mode"] == "single":
                         assert "submission.csv" not in artifacts, "Custom runs cannot claim official reproducibility"
+                        assert job["result"]["submission"]["eligible"] is False
                     else:
                         assert "comparison.csv" in artifacts and "submission.csv" in artifacts
+                        assert job["result"]["submission"]["eligible"] is True
+                        assert job["result"]["submission"]["seed"] == 42
+                        assert job["result"]["submission"]["validation"]["status"] == "passed"
                         actual = list(csv.DictReader(io.StringIO(artifacts["submission.csv"].decode("utf-8"))))
                         expected = list(csv.DictReader(io.StringIO((ROOT / "submission.csv").read_text(encoding="utf-8"))))
                         assert actual == expected, "Official export must reproduce default seed42, not selected best seed"
@@ -87,7 +99,7 @@ def main():
                                      "runtime_seconds": time.monotonic() - started})
                 print(f"HTTP {config['mode']}: PASS, artifacts={', '.join(sorted(artifacts))}")
             report = {"status": "PASS", "dataset_customers": overview["dataset"]["customers"],
-                      "checks": ["static UI assets", "actual HTTP background runs", "live pilot events", "isolated exports", "official seed42 reproduction", "in-app test execution"],
+                      "checks": ["static UI assets", "actual HTTP background runs", "live pilot events and public filters", "per-trial public contract evidence", "pilot-based explanations", "separate submission eligibility", "isolated exports", "official seed42 reproduction", "in-app test execution"],
                       "runs": observations}
             (ROOT / "artifacts" / "web_validation.json").write_text(json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
             print("Saved artifacts/web_validation.json")

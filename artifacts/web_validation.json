@@ -4,7 +4,10 @@
   "checks": [
     "static UI assets",
     "actual HTTP background runs",
-    "live pilot events",
+    "live pilot events and public filters",
+    "per-trial public contract evidence",
+    "pilot-based explanations",
+    "separate submission eligibility",
     "isolated exports",
     "official seed42 reproduction",
     "in-app test execution"
@@ -30,7 +33,7 @@
         "best_seed": 7,
         "best_net": 5885.657181821118,
         "total_pilots": 4,
-        "total_runtime_seconds": 19.671977900001366
+        "total_runtime_seconds": 26.939458799999557
       },
       "artifacts": [
         "campaign_plan.csv",
@@ -38,7 +41,7 @@
         "report.json",
         "result.json"
       ],
-      "runtime_seconds": 20.89099999999962
+      "runtime_seconds": 28.75
     },
     {
       "mode": "batch",
@@ -60,7 +63,7 @@
         "best_seed": 42,
         "best_net": 211426.80537042208,
         "total_pilots": 40,
-        "total_runtime_seconds": 2.457644199999777
+        "total_runtime_seconds": 4.026881499998126
       },
       "artifacts": [
         "campaign_plan.csv",
@@ -70,7 +73,7 @@
         "result.json",
         "submission.csv"
       ],
-      "runtime_seconds": 3.5
+      "runtime_seconds": 6.0
     },
     {
       "mode": "tests",
@@ -85,8 +88,8 @@
       "summary": {
         "trials": 0,
         "positive_runs": 0,
-        "total_runtime_seconds": 17.02894010000091,
-        "tests_run": 45,
+        "total_runtime_seconds": 23.2469130999998,
+        "tests_run": 60,
         "tests_passed": true,
         "failures": 0,
         "errors": 0,
@@ -96,7 +99,7 @@
         "result.json",
         "tests.txt"
       ],
-      "runtime_seconds": 17.389999999999418
+      "runtime_seconds": 23.764999999999418
     }
   ]
 }

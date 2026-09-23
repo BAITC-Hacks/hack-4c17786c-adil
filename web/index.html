@@ -29,12 +29,25 @@
       <section class="page" id="page-overview" aria-labelledby="overview-title">
         <div class="page-heading"><div><div class="eyebrow">КАМПАНИИ ПОД КОНТРОЛЕМ</div><h1 id="overview-title">От гипотезы — к результату<span class="heading-dot">.</span></h1><p>Агенты исследуют аудиторию, проводят пилоты и собирают план кампаний.</p></div><button type="button" class="button button-outline" id="refresh-button"><span class="icon" data-icon="refresh"></span>Обновить</button></div>
 
+        <section class="journey panel" aria-labelledby="journey-title">
+          <div class="journey-heading"><div><h2 id="journey-title">Первый план — за один запуск</h2><p>Исходные данные уже в проекте. Начните со стандартных настроек, затем сравните эксперименты.</p></div><span class="small-badge">Без API-ключей</span></div>
+          <ol class="journey-steps">
+            <li id="journey-data"><span class="journey-number">1</span><div><h3>Проверьте данные</h3><p id="journey-data-text">Проверяем исходные файлы…</p><a href="#data" class="text-link">Данные и проверки ↗</a></div></li>
+            <li id="journey-launch"><span class="journey-number">2</span><div><h3>Запустите агента</h3><p>Для файла сдачи: seed 42, 20 пилотов, 240 секунд.</p><button type="button" class="text-button" data-submission-preset>Настройки для сдачи ↓</button></div></li>
+            <li id="journey-pilots"><span class="journey-number">3</span><div><h3>Наблюдайте за пилотами</h3><p id="journey-pilots-text">Агент проверит гипотезы на небольших выборках. Результаты появятся по мере работы.</p></div></li>
+            <li id="journey-result"><span class="journey-number">4</span><div><h3>Проверьте и скачайте</h3><p id="journey-result-text">Изучите план и ограничения. Затем скачайте submission.csv из результата.</p><button type="button" class="text-button hidden" id="show-current-result">Перейти к результату ↓</button></div></li>
+          </ol>
+          <div id="overview-data-error" class="readiness-alert hidden" role="status"></div>
+        </section>
+
         <div class="metrics-grid" id="overview-metrics" aria-label="Показатели проекта">
           <article class="metric-card"><div class="metric-top">Аудитория<span class="icon" data-icon="users"></span></div><strong id="metric-audience">—</strong><span class="metric-foot">клиентов для исследования</span></article>
           <article class="metric-card"><div class="metric-top">Бюджет кейса<span class="icon" data-icon="wallet"></span></div><strong>100 000<span class="metric-unit">у.е.</span></strong><span class="metric-foot">пилоты + финальные кампании</span></article>
           <article class="metric-card"><div class="metric-top">Лимит контактов<span class="icon" data-icon="target"></span></div><strong>15 000</strong><span class="metric-foot">на один независимый прогон</span></article>
-          <article class="metric-card metric-accent"><div class="metric-top">Успешных запусков<span class="icon" data-icon="activity"></span></div><strong id="metric-runs">—</strong><span class="metric-foot" id="metric-runs-foot">история сохраняется локально</span></article>
+          <article class="metric-card metric-accent"><div class="metric-top">Завершённых расчётов<span class="icon" data-icon="activity"></span></div><strong id="metric-runs">—</strong><span class="metric-foot" id="metric-runs-foot">история сохраняется локально</span></article>
         </div>
+
+        <div class="overview-limits" aria-label="Ограничения задания"><strong>В каждом прогоне</strong><span>1–10 кампаний</span><span>до 5 000 клиентов на кампанию</span><span>до 20 пилотов по 10–200 клиентов</span><p>Бюджет 100 000 у.е. и 15 000 контактов включают пилоты. Результат рассчитывается на синтетической учебной модели.</p></div>
 
         <div class="overview-workspace">
           <section class="panel launch-panel" aria-labelledby="launch-title"><div class="panel-heading"><div><div class="section-kicker">01 / НАСТРОЙКА</div><h2 id="launch-title">Новый запуск</h2></div><span class="small-badge">Автономно</span></div>
@@ -42,13 +55,15 @@
               <fieldset class="mode-fieldset"><legend>Режим запуска</legend><div class="mode-options"><label class="mode-option"><input type="radio" name="mode" value="single" checked><span><strong><span class="icon" data-icon="play"></span>Один прогон</strong><small>План кампаний и отчёт</small></span></label><label class="mode-option"><input type="radio" name="mode" value="batch"><span><strong><span class="icon" data-icon="layers"></span>Серия прогонов</strong><small>Проверка устойчивости</small></span></label></div></fieldset>
               <div class="form-grid"><div class="field"><label for="seed">Начальное зерно <span class="muted">(seed)</span></label><input id="seed" name="seed" type="number" min="0" max="2147483627" step="1" value="42" required><small>Одинаковый seed повторяет эксперимент.</small></div><div class="field"><label for="max-pilots">Максимум пилотов</label><input id="max-pilots" name="max_pilots" type="number" min="1" max="20" step="1" value="20" required><small>От 1 до 20 экспериментов.</small></div><div class="field"><label for="time-limit">Время работы агента, сек.</label><input id="time-limit" name="time_limit_seconds" type="number" min="10" max="240" step="1" value="240" required><small>Подготовка и оценка результата занимают дополнительное время.</small></div><div class="field hidden" id="batch-field"><label for="batch-runs">Количество прогонов</label><input id="batch-runs" name="runs" type="number" min="2" max="20" step="1" value="10"><small>Последовательные seed, начиная с заданного.</small></div><div class="field form-note" id="single-note"><span class="icon" data-icon="shield"></span><span>Агент сам выберет сегменты, тарифы и каналы связи.</span></div></div>
               <p class="form-error hidden" id="run-form-error" role="alert"></p>
+              <p class="submission-hint" id="submission-config-hint"></p>
+              <p class="launch-blocker hidden" id="launch-blocker" role="status"></p>
               <button class="button button-primary launch-button" id="launch-button" type="submit"><span class="icon" data-icon="play"></span><span id="launch-label">Запустить агента</span><span class="button-arrow">↗</span></button>
               <p class="form-footer"><span class="status-dot"></span>Учебная среда · реальные сообщения клиентам не отправляются</p>
             </form>
           </section>
           <section class="panel process-panel" aria-labelledby="process-title"><div class="panel-heading"><div><div class="section-kicker">02 / ПРОЦЕСС</div><h2 id="process-title">Команда агентов</h2></div><span class="small-badge" id="process-status">Готова к работе</span></div>
             <ol class="agent-pipeline" id="agent-pipeline"><li data-step="0"><div class="step-node"><span class="icon" data-icon="database"></span></div><div><strong>Исследование аудитории</strong><p>Данные, сегменты и гипотезы</p></div><span class="step-state">01</span></li><li data-step="1"><div class="step-node"><span class="icon" data-icon="flask"></span></div><div><strong>Пилотные эксперименты</strong><p>Проверка эффекта и уточнение оценок</p></div><span class="step-state">02</span></li><li data-step="2"><div class="step-node"><span class="icon" data-icon="sliders"></span></div><div><strong>Оптимизация плана</strong><p>Выбор кампаний в рамках лимитов</p></div><span class="step-state">03</span></li><li data-step="3"><div class="step-node"><span class="icon" data-icon="check"></span></div><div><strong>Контроль и результат</strong><p>Проверка, оценка и готовые файлы</p></div><span class="step-state">04</span></li></ol>
-            <div class="process-bottom" id="process-bottom"><span class="icon" data-icon="sparkles"></span><p>Один запуск — полный цикл.<br><strong>От данных до плана и отчёта.</strong></p></div>
+            <div class="process-bottom" id="process-bottom"><span class="icon" data-icon="sparkles"></span><p>Пилот — пробная кампания на 10–200 клиентах.<br><strong>Наблюдаемый эффект шумный: агент уточняет оценку перед выбором плана.</strong></p></div>
             <div class="live-progress hidden" id="live-progress" aria-live="polite"><div class="progress-caption"><strong id="progress-message">Подготовка…</strong><span id="progress-count"></span></div><div class="progress-track"><div id="progress-fill"></div></div><div class="live-footer"><span id="progress-detail"></span><button type="button" id="cancel-button" class="text-button danger">Остановить</button></div></div>
           </section>
         </div>

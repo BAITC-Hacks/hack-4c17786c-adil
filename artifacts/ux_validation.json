@@ -1,0 +1,115 @@
+{
+  "date": "2026-09-23",
+  "scope": "Campaign Studio overview and public local contract; synthetic evaluator only",
+  "sources": {
+    "d1_text_matches_snapshot": false,
+    "d1_paragraphs": 150,
+    "d1_snapshot_sha256_utf8_lf": "add0b656c2348a385fe24ef39c33a1f243b85a60d1a4d548965fc66de91300e9",
+    "d3_matches_d2_pdf": true,
+    "d3_pages": 4,
+    "d3_sha256": "b261a5df8e2555bce5f3ac1545a4daf8a8e5a308c3609bf7c04e7904b4d37e4a",
+    "d1_text_matches_ignoring_outer_whitespace": true
+  },
+  "source_notes": {
+    "D1": "Read all 150 paragraphs; only four trailing blank lines differ from committed snapshot; includes 100-point rubric.",
+    "D2": "Participant guide and public Python contract reread; organizer files unchanged.",
+    "D3": "Downloaded original is a four-page PDF identical to the package guide despite .docx filename."
+  },
+  "commands": [
+    {
+      "command": "python setup_case.py",
+      "exit_code": 0,
+      "duration_seconds": 0.328
+    },
+    {
+      "command": "python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "duration_seconds": 23.5
+    },
+    {
+      "command": "python local_eval.py",
+      "exit_code": 0,
+      "duration_seconds": 3.672
+    },
+    {
+      "command": "python local_eval.py --runs 10",
+      "exit_code": 0,
+      "duration_seconds": 23.813
+    },
+    {
+      "command": "python make_submission.py",
+      "exit_code": 0,
+      "duration_seconds": 3.062
+    },
+    {
+      "command": "python scripts/validate.py --runs 10",
+      "exit_code": 0,
+      "duration_seconds": 26.547
+    },
+    {
+      "command": "python scripts/validate_web.py",
+      "exit_code": 0,
+      "duration_seconds": 61.781
+    },
+    {
+      "command": "python demo.py --seed 42",
+      "exit_code": 0,
+      "duration_seconds": 3.062
+    },
+    {
+      "command": "python -m compileall -q agent.py app.py campaign_agents webapp scripts tests demo.py setup_case.py",
+      "exit_code": 0,
+      "duration_seconds": 0.188
+    },
+    {
+      "command": "node --check web/app.js",
+      "exit_code": 0
+    }
+  ],
+  "unit_tests": {
+    "run": 60,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unittest_duration_seconds": 21.555
+  },
+  "agent_changed": false,
+  "agent_sha256": {
+    "agent.py": "fc4c8d3becac35202961063cd364cef713e0e894e05e5e1b879498c7399a997a",
+    "campaign_agents/analyst.py": "9184c6ea38ba4514cf638c9be2631ce410c459cc764669d7d1163fdf09780277",
+    "campaign_agents/experimenter.py": "f49e2b9dfda36a754725bc61913a683772a0caa4aed8bb568eeabfd96d70b5f7",
+    "campaign_agents/models.py": "09dc9607d9b65a8ef0c4a1c75b0215adb5d8ddd08f19d59cd034bc524260f36c",
+    "campaign_agents/optimizer.py": "511013f4f135d6a6ff3461d31dea961008165efaec196fed3200f4f7af808dde",
+    "campaign_agents/validator.py": "1f3e86acb5a1189181126e872708620010db296dd8a9b3977576862d8c702d3e",
+    "campaign_agents/__init__.py": "8648c7dbeef9b0bc94c37ec636e6db9901be76ed8e97e8d67cc2314fd7f03801"
+  },
+  "agent_sources_match_before": true,
+  "strategy_review": "artifacts/strategy_review.json",
+  "browser": {
+    "browser": "Chrome",
+    "first_run_empty_history": "passed",
+    "data_error_blocks_launch": "passed in isolated copy, header-only CSV",
+    "data_restore": "passed after preserving malformed file under another filename",
+    "standard_seed42_result": "passed; 11/11 local contract checks",
+    "live_pilots": "observed during series20–29; labels show actual filter,tariff,channel,sample size,cost and noisy observation",
+    "download": "download event captured after UI click; HTTP attachment; bytes equal official make_submission.py output",
+    "submission_sha256_lf": "b486c5aa5dc0631f95dd135505fed6ef7f29ba24fba92a76b4a9bfa9ed4f7f5b",
+    "negative_seed20": "negative profit warning visible while public contract passes; custom plan not labeled official submission",
+    "legacy_history": "preserved; missing proof explicitly shown",
+    "responsive": {
+      "requested_width": 390,
+      "document_client_width": 375,
+      "document_scroll_width": 375,
+      "page_overflow": false
+    },
+    "console_errors_or_warnings": []
+  },
+  "limits": {
+    "hidden_judging": "not_checked",
+    "current_commit_ci": "not_yet_checked_at_report_generation",
+    "previous_ci": "Organizer repository account billing issue prevented run35853639102 from starting; no previous CI pass claimed.",
+    "lint_and_typecheck": "not_configured_or_installed",
+    "frontend_build": "not_applicable_plain_html_css_js",
+    "agent_deadline": "cooperative; synchronous operation cannot be interrupted"
+  }
+}

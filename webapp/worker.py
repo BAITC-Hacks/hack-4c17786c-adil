@@ -21,6 +21,8 @@ import sys
 import time
 import unittest
 
+from webapp.evidence import build_explanations, build_validation
+
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CAMPAIGN_COLUMNS = [
@@ -127,6 +129,8 @@ class PublicEnvironmentProxy:
                 "observed_lift_ratio": observation.get("observed_lift_ratio"),
                 "remaining_budget": self._env.remaining_budget,
                 "remaining_contacts": self._env.remaining_contacts,
+                "filters": {key: kwargs[key] for key in CAMPAIGN_COLUMNS
+                            if key.startswith("filter_") and kwargs.get(key) is not None},
             }
             if failure:
                 event["error"] = failure
@@ -143,6 +147,8 @@ class ReportingAgent:
         self.campaigns = []
         self.report = {}
         self.error = None
+        self.plan_validated = False
+        self.agent_runtime_seconds = None
 
     def act(self, env):
         from demo import build_report
@@ -153,8 +159,11 @@ class ReportingAgent:
         try:
             self.emit({"type": "stage", "message": "Агент изучает аудиторию и проверяет гипотезы.",
                        "trial_index": self.trial_index, "trial_count": self.config["runs"]})
+            act_started = time.perf_counter()
             self.campaigns = self.agent.act(proxy) or []
+            self.agent_runtime_seconds = time.perf_counter() - act_started
             validate_plan(self.campaigns, proxy.tariffs)
+            self.plan_validated = True
             self.report = build_report(self.agent, proxy, self.campaigns,
                                        self.seed, time.perf_counter() - started)
             self.emit({"type": "stage", "message": "План готов. Локальный оценщик рассчитывает результат.",
@@ -241,9 +250,20 @@ def execute_evaluations(config, output_dir, emit):
             raise RuntimeError("Число оценённых кампаний не совпадает с пилотами и финальным планом. Экспорт отменён.")
         campaigns = [{column: item.get(column) for column in CAMPAIGN_COLUMNS}
                      for item in wrapper.campaigns]
+        runtime_seconds = time.perf_counter() - trial_started
+        validation = build_validation(campaigns, score, wrapper.report, wrapper.agent_runtime_seconds,
+                                      plan_validated=wrapper.plan_validated)
+        if validation["status"] != "passed":
+            failed_checks = "; ".join(
+                f"{item['label']}: {'нарушение' if item['status'] == 'failed' else 'нет подтверждения'}"
+                for item in validation["checks"] if item["status"] != "passed")
+            raise RuntimeError(f"Проверка результата не завершилась успешно. Экспорт отменён. {failed_checks}")
+        explanations = build_explanations(campaigns, wrapper.report)
         trial = plain({"seed": seed, "score": score, "report": agent.last_report,
                        "campaigns": campaigns,
-                       "runtime_seconds": time.perf_counter() - trial_started})
+                       "runtime_seconds": runtime_seconds,
+                       "agent_runtime_seconds": wrapper.agent_runtime_seconds,
+                       "validation": validation, "explanations": explanations})
         trials.append(trial)
         if selected_trial is None or trial["score"]["net_arpu_gain"] > selected_trial["score"]["net_arpu_gain"]:
             selected_trial = trial
@@ -279,10 +299,19 @@ def execute_evaluations(config, output_dir, emit):
     if submission_trial is not None:
         write_text(output_dir, "submission.csv", csv_text(submission_trial["campaigns"], CAMPAIGN_COLUMNS))
         artifacts.append("submission.csv")
-        submission_note = "submission.csv воспроизводит стандартную сдачу: seed 42, 20 пилотов и лимит 240 секунд. В серии он может отличаться от плана лучшего прогона."
+        submission_note = "submission.csv содержит план со стандартными параметрами сдачи: seed 42, 20 пилотов и лимит 240 секунд. В серии он может отличаться от плана лучшего прогона. Повторная генерация проверяется отдельно."
         export_notes["submission.csv"] = submission_note
     else:
         submission_note = "Для submission.csv запустите seed 42 с 20 пилотами и лимитом 240 секунд. Текущий campaign_plan.csv — план эксперимента."
+    submission = {
+        "eligible": submission_trial is not None,
+        "seed": 42 if submission_trial is not None else None,
+        "reason": ("План seed 42 прошёл локальные проверки контракта; использованы стандартные параметры make_submission.py. "
+                   "Повторная генерация в рамках этого запуска не выполнялась."
+                   if submission_trial is not None else submission_note),
+        "validation": submission_trial["validation"] if submission_trial is not None else None,
+        "reproduction": "not_checked_in_this_run",
+    }
     if config["mode"] == "batch":
         comparison_columns = ["seed", "net_arpu_gain", "gross_arpu_lift", "total_cost",
                               "n_pilots", "final_campaigns", "runtime_seconds", "selected"]
@@ -303,9 +332,12 @@ def execute_evaluations(config, output_dir, emit):
         "note": "Результат получен на учебной модели. Прогнозы агента и локальная оценка — разные показатели; локальная оценка не предсказывает балл судейства.",
         "submission_note": submission_note,
         "submission_seed": 42 if submission_trial is not None else None,
+        "submission": submission,
         "export_notes": export_notes,
         "score": selected_trial["score"], "campaigns": selected_trial["campaigns"],
         "report": selected_report, "trials": trials, "artifacts": artifacts,
+        "validation": selected_trial["validation"],
+        "explanations": selected_trial["explanations"],
     }
     write_json(output_dir, "result.json", result)
     return result
