@@ -158,5 +158,12 @@
   "validation_artifacts": [
     "artifacts/validation.json",
     "artifacts/web_validation.json"
-  ]
+  ],
+  "github_actions": {
+    "status": "BLOCKED_BEFORE_STEPS",
+    "code_commit": "1e3465b39b1197fda680640bb0a8b1e811c05717",
+    "run_url": "https://github.com/BAITC-Hacks/hack-4c17786c-adil/actions/runs/35853639102",
+    "observed_annotation": "The job was not started because your account is locked due to a billing issue.",
+    "billing_settings_changed": false
+  }
 }
