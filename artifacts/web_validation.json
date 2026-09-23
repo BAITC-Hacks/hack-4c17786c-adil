@@ -1,0 +1,102 @@
+{
+  "status": "PASS",
+  "dataset_customers": 23441,
+  "checks": [
+    "static UI assets",
+    "actual HTTP background runs",
+    "live pilot events",
+    "isolated exports",
+    "official seed42 reproduction",
+    "in-app test execution"
+  ],
+  "runs": [
+    {
+      "mode": "single",
+      "config": {
+        "mode": "single",
+        "seed": 7,
+        "max_pilots": 4,
+        "time_limit_seconds": 60,
+        "runs": 1
+      },
+      "status": "completed",
+      "summary": {
+        "trials": 1,
+        "positive_runs": 1,
+        "mean_net": 5885.657181821118,
+        "median_net": 5885.657181821118,
+        "min_net": 5885.657181821118,
+        "max_net": 5885.657181821118,
+        "best_seed": 7,
+        "best_net": 5885.657181821118,
+        "total_pilots": 4,
+        "total_runtime_seconds": 17.348821000001408
+      },
+      "artifacts": [
+        "campaign_plan.csv",
+        "report.html",
+        "report.json",
+        "result.json"
+      ],
+      "runtime_seconds": 18.40600000000086
+    },
+    {
+      "mode": "batch",
+      "config": {
+        "mode": "batch",
+        "seed": 41,
+        "max_pilots": 20,
+        "time_limit_seconds": 240,
+        "runs": 2
+      },
+      "status": "completed",
+      "summary": {
+        "trials": 2,
+        "positive_runs": 2,
+        "mean_net": 196398.0586702707,
+        "median_net": 196398.0586702707,
+        "min_net": 181369.3119701193,
+        "max_net": 211426.80537042208,
+        "best_seed": 42,
+        "best_net": 211426.80537042208,
+        "total_pilots": 40,
+        "total_runtime_seconds": 2.4084607000004326
+      },
+      "artifacts": [
+        "campaign_plan.csv",
+        "comparison.csv",
+        "report.html",
+        "report.json",
+        "result.json",
+        "submission.csv"
+      ],
+      "runtime_seconds": 3.5
+    },
+    {
+      "mode": "tests",
+      "config": {
+        "mode": "tests",
+        "seed": 42,
+        "max_pilots": 20,
+        "time_limit_seconds": 240,
+        "runs": 1
+      },
+      "status": "completed",
+      "summary": {
+        "trials": 0,
+        "positive_runs": 0,
+        "total_runtime_seconds": 10.549252100001468,
+        "tests_run": 21,
+        "tests_passed": true,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "artifacts": [
+        "result.json",
+        "tests.txt"
+      ],
+      "runtime_seconds": 11.031999999999243
+    }
+  ]
+}

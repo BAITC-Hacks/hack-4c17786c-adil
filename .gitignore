@@ -9,6 +9,7 @@ venv/
 .coverage
 artifacts/*.log
 .publish/
+.local/
 # Exact originals are stored in vendor/beeline_case_participants.zip.
 customer_profile.csv
 tariff_dictionary.csv

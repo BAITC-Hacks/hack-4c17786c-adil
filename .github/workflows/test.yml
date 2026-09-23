@@ -21,3 +21,4 @@ jobs:
       - run: python make_submission.py
       - run: git diff --exit-code -- submission.csv
       - run: python demo.py --seed 42
+      - run: python scripts/validate_web.py
