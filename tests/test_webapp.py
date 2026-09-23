@@ -12,6 +12,7 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 import uuid
 
 from webapp.server import Manager, make_server, validate_config
@@ -144,6 +145,80 @@ class DashboardHTTPTests(unittest.TestCase):
         )
         self.assertEqual(status, 400, body)
 
+    def test_all_actions_reject_non_object_or_unexpected_json(self):
+        run = self.create_run()
+        self.wait_for_status(run["id"], {"running"})
+        for path in ("/api/data/prepare", f"/api/runs/{run['id']}/cancel"):
+            for raw in ("null", "[]", '"text"', '{"unexpected":true}', "[" * 1100 + "]" * 1100):
+                with self.subTest(path=path, raw=raw[:40]):
+                    status, _, body = self.request("POST", path, raw_body=raw,
+                                                   headers={"Content-Type": "application/json"})
+                    self.assertEqual(status, 400, body)
+        self.assertEqual(self.manager.get_run(run["id"])["status"], "running")
+
+    def test_missing_data_still_returns_usable_overview(self):
+        status, _, body = self.request("GET", "/api/overview")
+        self.assertEqual(status, 200, body)
+        dataset = json.loads(body)["dataset"]
+        self.assertFalse(dataset["ready"])
+        self.assertIn("customer_profile.csv", dataset["error"])
+        self.assertEqual(dataset["customers"], 0)
+
+    def test_failed_initial_write_cannot_leave_an_unqueued_active_job(self):
+        with mock.patch.object(self.manager, "_save", side_effect=PermissionError("test disk full")):
+            status, _, body = self.request("POST", "/api/runs", payload=VALID_CONFIG)
+            self.assertEqual(status, 500, body)
+        self.assertEqual(self.manager.list_runs(), [])
+        self.assertEqual(self.manager.pending.unfinished_tasks, 0)
+        self.assertTrue(self.manager.thread.is_alive())
+        self.create_run()
+
+    def test_state_write_failure_does_not_kill_queue(self):
+        save = self.manager._save
+        failed = []
+
+        def fail_first_start(job):
+            if job["status"] == "running" and not failed:
+                failed.append(job["id"])
+                raise PermissionError("test read-only history")
+            save(job)
+
+        with mock.patch.object(self.manager, "_save", side_effect=fail_first_start):
+            run = self.create_run()
+            failed_run = self.wait_for_status(run["id"], {"failed"})
+            self.assertIn("test read-only history", failed_run["error"])
+            next_run = self.create_run()
+            self.wait_for_status(next_run["id"], {"running"})
+        self.assertTrue(self.manager.thread.is_alive())
+
+    def test_cancellation_stops_process_even_if_history_cannot_be_saved(self):
+        run = self.create_run()
+        self.wait_for_status(run["id"], {"running"})
+        deadline = time.monotonic() + 3
+        while run["id"] not in self.manager.processes and time.monotonic() < deadline:
+            time.sleep(0.01)
+        process = self.manager.processes[run["id"]]
+        with mock.patch.object(self.manager, "_save", side_effect=PermissionError("test disk full")):
+            status, _, body = self.request("POST", f"/api/runs/{run['id']}/cancel", payload={})
+            self.assertEqual(status, 200, body)
+            cancelled = json.loads(body)["run"]
+            self.assertEqual(cancelled["status"], "cancelled")
+            self.assertIn("Не удалось сохранить", cancelled["error"])
+        process.wait(timeout=3)
+        self.assertIsNotNone(process.poll())
+
+    def test_bad_result_does_not_break_detail_endpoint(self):
+        run = self.create_run()
+        result_path = self.data_dir / run["id"] / "result.json"
+        for content in ("[]", '{"score":NaN}', '{"score":1e999}', "{broken"):
+            with self.subTest(content=content):
+                result_path.write_text(content, encoding="utf-8")
+                status, _, body = self.request("GET", f"/api/runs/{run['id']}")
+                self.assertEqual(status, 200, body)
+                details = json.loads(body)["run"]
+                self.assertIsNone(details["result"])
+                self.assertIn("result_error", details)
+
     def test_foreign_origin_and_host_cannot_create_runs(self):
         for headers in (
             {"Origin": "https://evil.example"},
@@ -212,6 +287,36 @@ class DashboardHTTPTests(unittest.TestCase):
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_corrupt_metadata_is_preserved_and_does_not_break_startup(self):
+        with tempfile.TemporaryDirectory(prefix="campaign-corrupt-history-") as directory:
+            root = Path(directory)
+            data_dir = root / "runs"
+            base = {"status": "completed", "config": VALID_CONFIG,
+                    "created_at": "2026-09-23T00:00:00+00:00"}
+            invalid = [None, [], "text", {}, dict(base, status=[]),
+                       dict(base, created_at=None), dict(base, config=[]),
+                       dict(base, progress=[]), dict(base, events=["broken"]),
+                       dict(base, summary={"score": float("nan")})]
+            originals = {}
+            for value in invalid:
+                run_id = uuid.uuid4().hex
+                if isinstance(value, dict):
+                    value["id"] = run_id
+                run_dir = data_dir / run_id
+                run_dir.mkdir(parents=True)
+                path = run_dir / "metadata.json"
+                originals[path] = json.dumps(value)
+                path.write_text(originals[path], encoding="utf-8")
+            manager = Manager(root=root, data_dir=data_dir, worker_command=SLEEPING_WORKER)
+            try:
+                self.assertEqual(manager.list_runs(), [])
+                self.assertEqual(len(manager.history_warnings), len(invalid))
+                self.assertEqual(len(manager.overview()["history_warnings"]), len(invalid))
+                for path, original in originals.items():
+                    self.assertEqual(path.read_text(encoding="utf-8"), original)
+            finally:
+                manager.close()
+
     def test_restart_marks_unfinished_jobs_interrupted(self):
         with tempfile.TemporaryDirectory(prefix="campaign-recovery-test-") as directory:
             root = Path(directory)

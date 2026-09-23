@@ -66,8 +66,13 @@ class Experimenter:
     def run(self, env, state, deadline):
         spent = 0.0
         pilot_budget = min(state.initial_budget * 0.20, 20000.0)
-        min_final_size = min((arm.size for arm in state.arms), default=1)
-        contact_reserve = max(min_final_size, int(state.initial_contacts * 0.65))
+        # Final campaigns are capped by the remaining reach and by 5,000
+        # contacts; they do not require the entire filter cell to fit. Reserving
+        # a whole large cell can otherwise prevent every affordable pilot.
+        contact_reserve = max(1, int(state.initial_contacts * 0.65))
+        if state.initial_contacts >= 11:
+            contact_reserve = min(contact_reserve, state.initial_contacts - 10)
+        final_contact_cost = min(data["cost_per_contact"] for data in state.channels.values())
         for step in range(min(self.max_pilots, int(env.pilots_left))):
             if time.monotonic() >= deadline:
                 state.warnings.append("Разведка остановлена по лимиту времени.")
@@ -81,7 +86,16 @@ class Experimenter:
             size = 100 if arm.n == 0 else (200 if arm.mean < 2 * arm.standard_error else 150)
             available = max(0, int(env.remaining_contacts) - contact_reserve)
             if price > 0:
-                available = min(available, int(max(0, min(env.remaining_budget, pilot_budget - spent)) // price))
+                allocation = max(0.0, pilot_budget - spent)
+                # The normal 20% exploration allowance is a preference, not a
+                # reason to skip the mandatory first feasible pilot. Keep the
+                # cost of at least one final contact even in a paid-only setup.
+                affordable_budget = max(0.0, float(env.remaining_budget) - final_contact_cost)
+                if not state.pilots and available >= 10 and arm.size >= 10 and affordable_budget >= 10 * price:
+                    if allocation < 10 * price:
+                        reason += "; минимальный пилот сверх обычной доли разведочного бюджета"
+                    allocation = max(allocation, 10 * price)
+                available = min(available, int(min(affordable_budget, allocation) // price))
             n = min(size, arm.size, available, 200)
             if n < 10:
                 arm.unavailable = True

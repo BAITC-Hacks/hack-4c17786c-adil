@@ -1,0 +1,162 @@
+{
+  "date": "2026-09-23",
+  "status": "PASS_FOR_VERIFIED_LOCAL_SCOPE",
+  "source_documents": [
+    {
+      "id": "D1",
+      "name": "HackAlem AI: Beeline Tariff Marketing Campaigns Case",
+      "url": "https://docs.google.com/document/d/1bt_tgnIXnsnGMMjeaqbOY165MXmYQOTllRCDwcKySKI/edit?tab=t.0",
+      "fully_read": true,
+      "text_snapshot": "docs/sources/google-doc-2026-09-23.txt",
+      "text_sha256_utf8_lf": "add0b656c2348a385fe24ef39c33a1f243b85a60d1a4d548965fc66de91300e9"
+    },
+    {
+      "id": "D2",
+      "name": "beeline_case_participants (1).zip",
+      "url": "https://drive.google.com/file/d/1cQUKtE_cm9TVXgzpcFwQYYUpmuFaJHHT/view",
+      "fully_read": true,
+      "sha256": "df1d955fb97816ff6de8ceb142ed589915d969f43f840a650dcdfbe12734f20b"
+    },
+    {
+      "id": "D3",
+      "name": "HackAlem AI: Beeline Tariff Marketing Campaigns Case.docx",
+      "url": "https://drive.google.com/file/d/18zfkukVXGxjjeTaRxpCcTRxskdsNbAT-/view",
+      "fully_read": true,
+      "actual_format": "PDF",
+      "pages": 4,
+      "matches_archive_file": "PARTICIPANT_GUIDE.pdf",
+      "sha256": "b261a5df8e2555bce5f3ac1545a4daf8a8e5a308c3609bf7c04e7904b4d37e4a"
+    }
+  ],
+  "requirements_matrix": "docs/requirements-audit.md",
+  "fixed_defects": {
+    "F01": [
+      "R05",
+      "R07",
+      "R09"
+    ],
+    "F02": [
+      "R03",
+      "R15"
+    ],
+    "F03": [
+      "R01",
+      "R18"
+    ],
+    "F04": [
+      "R01"
+    ],
+    "F05": [
+      "R03",
+      "R04",
+      "R11"
+    ]
+  },
+  "commands": [
+    {
+      "command": "python setup_case.py",
+      "exit_code": 0,
+      "duration_seconds": 0.234
+    },
+    {
+      "command": "python -m unittest discover -s tests -v",
+      "exit_code": 0,
+      "duration_seconds": 18.172
+    },
+    {
+      "command": "python local_eval.py",
+      "exit_code": 0,
+      "duration_seconds": 2.891
+    },
+    {
+      "command": "python local_eval.py --runs 10",
+      "exit_code": 0,
+      "duration_seconds": 16.75
+    },
+    {
+      "command": "python make_submission.py",
+      "exit_code": 0,
+      "duration_seconds": 2.078
+    },
+    {
+      "command": "python scripts/validate.py --runs 10",
+      "exit_code": 0,
+      "duration_seconds": 16.719
+    },
+    {
+      "command": "python scripts/validate_web.py",
+      "exit_code": 0,
+      "duration_seconds": 43.672
+    },
+    {
+      "command": "python demo.py --seed 42",
+      "exit_code": 0,
+      "duration_seconds": 1.75
+    },
+    {
+      "command": "python -m compileall -q agent.py app.py campaign_agents webapp scripts tests demo.py setup_case.py",
+      "exit_code": 0,
+      "duration_seconds": 0.125
+    }
+  ],
+  "final_checks_after_worker_patch": {
+    "unit_tests": {
+      "command": "python -m unittest discover -s tests -v",
+      "tests": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "status": "PASS"
+    },
+    "http": "PASS; scripts/validate_web.py repeated after final worker edits",
+    "python_compileall": "PASS",
+    "javascript_syntax": "PASS; node --check web/app.js"
+  },
+  "browser_checks": {
+    "status": "PASS",
+    "isolation": "separate copy; original data and pre-existing history retained",
+    "cases": [
+      "single seed42 with20pilots",
+      "download submission.csv",
+      "batch seeds41-42",
+      "compare two runs",
+      "startup with JSON-array metadata warning",
+      "unreadable result warning",
+      "header-only CSV is not ready",
+      "launch blocked for modified CSV",
+      "prepare refuses overwriting modified CSV",
+      "data and result recover after original bytes restored",
+      "main application restarted with preserved history; in-app tests button completed45/45"
+    ],
+    "console_errors_observed": []
+  },
+  "participant_files_unchanged": [
+    "environment.py",
+    "mock_environment.py",
+    "scoring_core.py",
+    "local_eval.py",
+    "make_submission.py",
+    "agent_template.py",
+    "PARTICIPANT_GUIDE.md",
+    "PARTICIPANT_GUIDE.pdf",
+    "customer_profile.csv",
+    "tariff_dictionary.csv",
+    "feature_dictionary.csv",
+    "data/change_tariff.csv",
+    "data/traffic.csv",
+    "data/arpu_monthly.csv",
+    "data/dict_tariff.csv"
+  ],
+  "limitations": [
+    "Hidden judging environment unavailable; local score is synthetic.",
+    "Agent deadline is cooperative, not preemptive for synchronous operations.",
+    "No guarantee of global optimum; pilot overlap estimated without customer IDs.",
+    "Conflicting source time limits (10min versus5min) preserved; offline240sec default.",
+    "Linter and type checker not configured or installed; not run.",
+    "No public deployment performed; no clean installation on another OS tested."
+  ],
+  "validation_artifacts": [
+    "artifacts/validation.json",
+    "artifacts/web_validation.json"
+  ]
+}

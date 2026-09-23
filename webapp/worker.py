@@ -150,20 +150,46 @@ class ReportingAgent:
         proxy = PublicEnvironmentProxy(env, self.emit, self.trial_index,
                                        self.config["runs"], self.config["max_pilots"])
         started = time.perf_counter()
-        self.emit({"type": "stage", "message": "Агент изучает аудиторию и проверяет гипотезы.",
-                   "trial_index": self.trial_index, "trial_count": self.config["runs"]})
         try:
+            self.emit({"type": "stage", "message": "Агент изучает аудиторию и проверяет гипотезы.",
+                       "trial_index": self.trial_index, "trial_count": self.config["runs"]})
             self.campaigns = self.agent.act(proxy) or []
+            validate_plan(self.campaigns, proxy.tariffs)
             self.report = build_report(self.agent, proxy, self.campaigns,
                                        self.seed, time.perf_counter() - started)
+            self.emit({"type": "stage", "message": "План готов. Локальный оценщик рассчитывает результат.",
+                       "trial_index": self.trial_index, "trial_count": self.config["runs"]})
         except Exception as exc:
             # evaluate_agent catches agent errors; preserve them so the job does
             # not silently present a partial evaluation as a successful run.
             self.error = exc
             raise
-        self.emit({"type": "stage", "message": "План готов. Локальный оценщик рассчитывает результат.",
-                   "trial_index": self.trial_index, "trial_count": self.config["runs"]})
         return self.campaigns
+
+
+def validate_plan(campaigns, tariffs):
+    """Reject a broken export before the evaluator silently sanitizes it.
+
+    This adapter belongs to the local runner, not to the submitted agent. It
+    uses the supplied public validator and never reads evaluator internals.
+    """
+    import pandas as pd
+    from scoring_core import validate_strategy
+
+    if not isinstance(campaigns, list) or not 1 <= len(campaigns) <= 10:
+        raise ValueError("Агент должен вернуть список из 1–10 кампаний; отчёт не сформирован.")
+    for index, campaign in enumerate(campaigns, 1):
+        if not isinstance(campaign, dict):
+            raise ValueError(f"Кампания {index}: ожидается словарь.")
+        unknown = set(campaign) - set(CAMPAIGN_COLUMNS)
+        if unknown:
+            raise ValueError(f"Кампания {index}: поля вне контракта сдачи: {', '.join(sorted(map(str, unknown)))}.")
+    # Include optional columns even for an intentionally unfiltered plan.
+    frame = pd.DataFrame(campaigns).reindex(columns=CAMPAIGN_COLUMNS)
+    try:
+        validate_strategy(frame, tariffs)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"План агента не соответствует контракту сдачи: {exc}") from exc
 
 
 def write_text(output_dir, name, content):
@@ -210,6 +236,9 @@ def execute_evaluations(config, output_dir, emit):
             raise RuntimeError(f"Агент завершился с ошибкой: {wrapper.error}") from wrapper.error
         if not isinstance(score, dict) or not isinstance(score.get("net_arpu_gain"), numbers.Real) or not math.isfinite(float(score["net_arpu_gain"])):
             raise RuntimeError("Локальный оценщик не вернул конечный числовой результат.")
+        if (not isinstance(score.get("n_pilots"), numbers.Integral)
+                or score.get("n_campaigns") != score["n_pilots"] + len(wrapper.campaigns)):
+            raise RuntimeError("Число оценённых кампаний не совпадает с пилотами и финальным планом. Экспорт отменён.")
         campaigns = [{column: item.get(column) for column in CAMPAIGN_COLUMNS}
                      for item in wrapper.campaigns]
         trial = plain({"seed": seed, "score": score, "report": agent.last_report,

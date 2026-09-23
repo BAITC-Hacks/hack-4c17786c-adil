@@ -26,7 +26,7 @@ def main():
     try:
         with urlopen(address + "/api/health", timeout=0.5) as response:
             running = json.load(response)
-        if running.get("app") == "Campaign Studio":
+        if isinstance(running, dict) and running.get("app") == "Campaign Studio":
             print("Приложение уже запущено: " + address)
             if args.open:
                 webbrowser.open(address)
@@ -38,12 +38,17 @@ def main():
         print(f"Данные готовы. Восстановлено CSV: {len(created)}")
     except (OSError, ValueError) as exc:
         print(f"Данные требуют проверки: {exc}")
-    manager = Manager()
+    try:
+        manager = Manager()
+    except OSError as exc:
+        raise SystemExit("Не удалось открыть каталог истории .local/runs. Проверьте права записи и свободное место: " + str(exc)) from exc
+    for warning in manager.history_warnings:
+        print(warning)
     try:
         server = make_server(manager, port=args.port)
-    except OSError:
+    except OSError as exc:
         manager.close()
-        raise SystemExit(f"Порт {args.port} занят. Используйте python app.py --port 8766 --open")
+        raise SystemExit(f"Не удалось открыть локальный порт {args.port}: {exc}. Попробуйте другой порт: python app.py --port 8766 --open") from exc
     print("Campaign Studio: " + address)
     print("Оставьте это окно открытым. Для остановки нажмите Ctrl+C.")
     if args.open:

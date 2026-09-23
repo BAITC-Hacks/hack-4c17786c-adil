@@ -136,6 +136,7 @@
     const report = selected?.report || {}, score = selected?.score || {};
     const meta = `<div class="result-meta"><strong>${esc(modeLabel(run.mode))}</strong>${statusBadge(run)}<span>${date(run.created_at)}</span>${run.mode !== "tests" ? `<span>Seed ${esc(run.config?.seed ?? "—")}${run.mode === "batch" ? ` · прогонов: ${num(run.config?.runs)}` : ""}</span>` : ""}<span>${esc(duration(summary.total_runtime_seconds))}</span></div>`;
     if (activeStatuses.has(run.status)) return meta + loading(run.progress?.message || "Запуск выполняется. Результат обновится автоматически.") + `<div class="result-actions"><button class="button button-outline" type="button" data-cancel-run="${esc(run.id)}" ${state.posting ? "disabled" : ""}>Остановить запуск</button></div>` + eventLog(run);
+    if (run.result_error) return meta + `<div class="run-error" role="alert"><strong>Сохранённый результат недоступен</strong><p>${esc(run.result_error)}</p><p>Исходные файлы сохранены. Можно повторить запуск с теми же настройками.</p></div><div class="result-actions"><button type="button" class="button button-outline" data-repeat-run="${esc(run.id)}">${icon("refresh")}Повторить настройки</button></div>` + eventLog(run);
     let content = meta;
     if (run.mode === "tests") {
       const passed = summary.tests_passed === true;
@@ -191,6 +192,9 @@
   }
   function renderHistory() {
     const restoreFocus = preserveFocus($("#history-content"));
+    const warnings = state.overview?.history_warnings || [];
+    $("#history-warnings").classList.toggle("hidden", !warnings.length);
+    $("#history-warnings").textContent = warnings.join("\n");
     $("#history-count").textContent = state.runs.length;
     $("#compare-count").textContent = state.selected.size;
     $("#compare-button").disabled = state.selected.size < 2;
@@ -210,7 +214,7 @@
     $("#segment-chart").innerHTML = segments.length ? segments.map(segment => `<div class="segment-row"><div class="segment-caption"><span>${esc(labels[segment.name] || segment.name)}</span><strong>${num(segment.count)} <span class="muted">· ${num(segment.count / data.customers * 100, 1)}%</span></strong></div><div class="segment-track"><div class="segment-fill" style="width:${Math.max(0, Math.min(100, segment.count / max * 100))}%"></div></div></div>`).join("") + '<p class="segment-legend">По заполненным значениям сегмента в профилях клиентов.</p>' : empty("Данные ещё не готовы", "Подготовьте файлы кейса для первого запуска.", "database");
     $("#data-readiness").textContent = data.ready ? "Все данные готовы" : "Нужна подготовка";
     $("#data-readiness").classList.toggle("success", data.ready);
-    $("#data-files").innerHTML = table(["Файл", "Состояние", "Размер"], (data.files || []).map(file => `<tr><td class="file-name">${esc(file.name)}</td><td><span class="small-badge ${file.exists ? "success" : "failed"}">${file.exists ? "Готов" : "Отсутствует"}</span></td><td>${file.exists ? bytes(file.size) : "—"}</td></tr>`));
+    $("#data-files").innerHTML = table(["Файл", "Состояние", "Размер"], (data.files || []).map(file => `<tr><td class="file-name">${esc(file.name)}</td><td><span class="small-badge ${file.valid === true ? "success" : "failed"}">${file.valid === true ? "Готов" : file.exists ? "Нужна проверка" : "Отсутствует"}</span>${file.error ? `<span class="row-subtitle">${esc(file.error)}</span>` : ""}</td><td>${file.exists ? bytes(file.size) : "—"}</td></tr>`));
     if (data.error) $("#data-files").insertAdjacentHTML("beforeend", `<div class="run-error">${esc(data.error)}</div>`);
   }
   async function loadDetail(id) { const { run } = await api(`/api/runs/${encodeURIComponent(id)}`); setRun(run); return run; }

@@ -19,7 +19,20 @@ import pandas as pd
 from agent import Agent
 from local_eval import evaluate_agent
 from make_submission import build_submission
+from scoring_core import validate_strategy
 from setup_case import ARCHIVE, ARCHIVE_SHA256, restore
+
+
+class CheckedAgent(Agent):
+    """Inspect the returned plan before the supplied evaluator can sanitize it."""
+
+    def act(self, env):
+        campaigns = super().act(env)
+        assert isinstance(campaigns, list) and 1 <= len(campaigns) <= 10
+        assert all(isinstance(campaign, dict) for campaign in campaigns)
+        validate_strategy(pd.DataFrame(campaigns), env.tariffs)
+        self.returned_campaigns = campaigns
+        return campaigns
 
 
 def main():
@@ -37,15 +50,17 @@ def main():
                 raise AssertionError(f"Participant source was modified: {filename}")
     results = []
     for seed in [42, *range(args.runs)]:
-        agent = Agent()
+        agent = CheckedAgent()
         started = time.monotonic()
         result = evaluate_agent(agent, seed=seed, verbose=False)
         duration = time.monotonic() - started
         assert result is not None, "No evaluator result"
+        assert result["n_campaigns"] == result["n_pilots"] + len(agent.returned_campaigns), "Evaluator dropped or truncated a final campaign"
         assert 1 <= len(agent.last_report["campaigns"]) <= 10
         assert 1 <= result["n_pilots"] <= 20
         assert result["total_contacts"] <= 15000 and result["total_cost"] <= 100000
         assert all(row["expected_contacts"] <= 5000 for row in agent.last_report["campaigns"])
+        assert all(0 < row["n_contacts"] <= 5000 for row in result["campaigns_detail"]), "Empty or oversized scored campaign"
         assert duration < 300, "Runtime exceeds stricter participant-template limit"
         results.append({"seed": seed, "net_arpu_gain": result["net_arpu_gain"],
                         "total_cost": result["total_cost"], "total_contacts": result["total_contacts"],
@@ -61,6 +76,8 @@ def main():
     report = {
         "python": platform.python_version(), "numpy": np.__version__, "pandas": pd.__version__,
         "participant_archive_sha256": ARCHIVE_SHA256, "participant_sources_unchanged": originals,
+        "raw_plans_validated_before_scoring": True,
+        "no_campaigns_dropped_or_truncated": True,
         "submission_reproducible": True, "submission_sha256_lf": hashlib.sha256(canonical).hexdigest(),
         "single_run": results[0], "stability_runs": results[1:],
         "summary": {"runs": len(gains), "positive_runs": sum(value > 0 for value in gains),

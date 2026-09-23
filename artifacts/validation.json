@@ -12,6 +12,8 @@
     "agent_template.py",
     "PARTICIPANT_GUIDE.md"
   ],
+  "raw_plans_validated_before_scoring": true,
+  "no_campaigns_dropped_or_truncated": true,
   "submission_reproducible": true,
   "submission_sha256_lf": "b486c5aa5dc0631f95dd135505fed6ef7f29ba24fba92a76b4a9bfa9ed4f7f5b",
   "single_run": {
@@ -22,7 +24,7 @@
     "pilots": 20,
     "final_campaigns": 1,
     "status": "PASS",
-    "runtime_seconds": 1.094000000000051
+    "runtime_seconds": 1.1560000000026776
   },
   "stability_runs": [
     {
@@ -33,7 +35,7 @@
       "pilots": 20,
       "final_campaigns": 1,
       "status": "PASS",
-      "runtime_seconds": 1.0
+      "runtime_seconds": 0.9529999999977008
     },
     {
       "seed": 1,
@@ -43,7 +45,7 @@
       "pilots": 20,
       "final_campaigns": 1,
       "status": "PASS",
-      "runtime_seconds": 1.125
+      "runtime_seconds": 1.0159999999996217
     },
     {
       "seed": 2,
@@ -53,7 +55,7 @@
       "pilots": 20,
       "final_campaigns": 5,
       "status": "PASS",
-      "runtime_seconds": 1.5470000000004802
+      "runtime_seconds": 1.5470000000022992
     },
     {
       "seed": 3,
@@ -63,7 +65,7 @@
       "pilots": 20,
       "final_campaigns": 1,
       "status": "PASS",
-      "runtime_seconds": 0.9679999999998472
+      "runtime_seconds": 1.25
     },
     {
       "seed": 4,
@@ -73,7 +75,7 @@
       "pilots": 20,
       "final_campaigns": 3,
       "status": "PASS",
-      "runtime_seconds": 1.2039999999997235
+      "runtime_seconds": 1.2969999999986612
     },
     {
       "seed": 5,
@@ -83,7 +85,7 @@
       "pilots": 20,
       "final_campaigns": 2,
       "status": "PASS",
-      "runtime_seconds": 1.1090000000003783
+      "runtime_seconds": 1.2809999999990396
     },
     {
       "seed": 6,
@@ -93,7 +95,7 @@
       "pilots": 20,
       "final_campaigns": 2,
       "status": "PASS",
-      "runtime_seconds": 1.8279999999995198
+      "runtime_seconds": 1.1870000000017171
     },
     {
       "seed": 7,
@@ -103,7 +105,7 @@
       "pilots": 20,
       "final_campaigns": 1,
       "status": "PASS",
-      "runtime_seconds": 1.530999999999949
+      "runtime_seconds": 0.9850000000005821
     },
     {
       "seed": 8,
@@ -113,7 +115,7 @@
       "pilots": 20,
       "final_campaigns": 4,
       "status": "PASS",
-      "runtime_seconds": 2.141000000000531
+      "runtime_seconds": 1.3279999999977008
     },
     {
       "seed": 9,
@@ -123,7 +125,7 @@
       "pilots": 20,
       "final_campaigns": 3,
       "status": "PASS",
-      "runtime_seconds": 2.344000000000051
+      "runtime_seconds": 1.5310000000026776
     }
   ],
   "summary": {

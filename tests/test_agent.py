@@ -7,11 +7,14 @@ effect model. No test imports or inspects mock_environment internals.
 import json
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 
 from agent import Agent
+from campaign_agents.models import Arm, State
+from campaign_agents.optimizer import Optimizer, effective_indexes
 from scoring_core import CHANNELS, FILTER_VALUES, apply_filters, validate_strategy
 
 
@@ -267,6 +270,94 @@ class AgentContractTests(unittest.TestCase):
         self.assertEqual(len(plan), 1)
         self.assertEqual(agent.last_report["resources"]["final_contacts"], 5000)
         self.assert_finite_report(agent)
+
+    def test_large_cells_do_not_reserve_away_every_pilot(self):
+        for n_per_segment, contacts in ((6000, 15000), (2000, 1750), (60, 11), (60, 15)):
+            with self.subTest(customers=n_per_segment * 3, contacts=contacts):
+                profile = make_profile(n_per_segment)
+                profile["arpu_segment"] = "HIGH"
+                profile["data_segment"] = "HEAVY"
+                profile["call_segment"] = "HIGH"
+                env = PublicEnvironment(profile=profile, contacts=contacts)
+                agent = self.make_agent()
+                plan = agent.act(env)
+                self.assertGreater(len(env.pilot_history), 0,
+                                   "A capped final campaign must leave room for affordable pilots")
+                self.assert_plan_valid(plan, env)
+                self.assertGreater(env.remaining_contacts, 0)
+                self.assert_finite_report(agent)
+
+    def test_small_paid_budget_preserves_minimum_pilot_and_final_contact(self):
+        for budget, contacts, pilot_possible in ((50, 15000, True), (44, 11, True), (43, 11, False)):
+            with self.subTest(budget=budget, contacts=contacts):
+                env = PublicEnvironment(profile=make_profile(60), budget=budget, contacts=contacts)
+                env.channels = {"sms": env.channels["sms"]}
+                agent = self.make_agent()
+                plan = agent.act(env)
+                self.assert_plan_valid(plan, env)
+                self.assertEqual(bool(env.pilot_history), pilot_possible)
+                if pilot_possible:
+                    self.assertEqual(len(env.pilot_history), 1)
+                    self.assertEqual(env.pilot_history[0]["n_customers"], 10)
+                    self.assertEqual(env.pilot_history[0]["cost"], 40)
+                self.assertGreaterEqual(env.remaining_budget, 4)
+                self.assertGreaterEqual(agent.last_report["resources"]["final_contacts"], 1)
+                self.assertGreaterEqual(agent.last_report["resources"]["projected_remaining_budget"], 0)
+                self.assert_finite_report(agent)
+
+    def optimizer_state(self):
+        profile = make_profile(60)
+        arm = Arm({"filter_current_tariff": "source", "filter_arpu_segment": "HIGH"},
+                  "offer_a", "sms", 60, 60 * 7200.0)
+        arm.observe(0.9, 100)
+        return State(profile, set(make_tariffs().tariff_plan_code), CHANNELS,
+                     100000, 15000, arms=[arm])
+
+    def test_expired_deadline_uses_bounded_fallback_without_variant_search(self):
+        state = self.optimizer_state()
+        # Many pending hypotheses must not cause a full search after expiry.
+        state.arms *= 200
+        with patch("campaign_agents.optimizer.time.monotonic", return_value=2.0), \
+             patch("campaign_agents.optimizer.variants", side_effect=AssertionError("Expired search resumed")):
+            records = Optimizer().plan(state, 100000, 15000, deadline=1.0)
+        self.assertEqual(len(records), 1)
+        self.assertGreater(records[0]["expected_contacts"], 0)
+        self.assertEqual(records[0]["channel"], "push")
+        validate_strategy(pd.DataFrame(records), make_tariffs())
+        self.assertTrue(any("лимиту времени" in warning for warning in state.warnings))
+
+    def test_expiry_inside_optimizer_sweep_stops_further_option_scans(self):
+        state = self.optimizer_state()
+        arm = state.arms[0]
+        indexes = np.flatnonzero(state.profile.arpu_segment.eq("HIGH"))
+        options = [(arm.campaign(), indexes, arm)] * 200
+        now = [0.0]
+        evaluated = []
+
+        def expire_after_first_option(*args):
+            evaluated.append(1)
+            now[0] = 2.0
+            return effective_indexes(*args)
+
+        with patch("campaign_agents.optimizer.time.monotonic", side_effect=lambda: now[0]), \
+             patch("campaign_agents.optimizer.variants", return_value=options), \
+             patch("campaign_agents.optimizer.effective_indexes", side_effect=expire_after_first_option):
+            records = Optimizer().plan(state, 100000, 15000, deadline=1.0)
+        self.assertEqual(len(evaluated), 1,
+                         "Time expiry must be checked inside the sweep, not just between sweeps")
+        self.assertEqual(len(records), 1)
+        validate_strategy(pd.DataFrame(records), make_tariffs())
+
+    def test_expired_deadline_keeps_valid_base_segment_without_refinements(self):
+        state = self.optimizer_state()
+        state.profile[["data_segment", "call_segment"]] = None
+        with patch("campaign_agents.optimizer.time.monotonic", return_value=2.0):
+            records = Optimizer().plan(state, 100000, 15000, deadline=1.0)
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["expected_contacts"], 60)
+        self.assertNotIn("filter_data_segment", records[0])
+        self.assertNotIn("filter_call_segment", records[0])
+        validate_strategy(pd.DataFrame(records), make_tariffs())
 
     def test_tiny_audience_does_not_overspend_to_satisfy_pilot_minimum(self):
         env = PublicEnvironment(profile=make_profile(1), budget=0, contacts=3)

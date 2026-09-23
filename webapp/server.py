@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 from datetime import datetime, timezone
+import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import mimetypes
@@ -16,9 +17,11 @@ import threading
 import time
 from urllib.parse import parse_qs, unquote, urlsplit
 import uuid
+import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 ACTIVE = {"queued", "running"}
+STATUSES = ACTIVE | {"completed", "failed", "cancelled", "interrupted"}
 ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 ARTIFACTS = {
     "campaign_plan.csv": "План эксперимента · CSV",
@@ -39,6 +42,16 @@ def write_json(path, payload):
     temporary = path.with_suffix(".tmp")
     temporary.write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def read_json_object(path):
+    """Do not let malformed saved state break every history/API request."""
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("Ожидался JSON-объект.")
+    # json.loads accepts NaN/Infinity (and an overflowing 1e999) by default.
+    json.dumps(value, allow_nan=False)
+    return value
 
 
 def validate_config(payload):
@@ -76,24 +89,44 @@ class Manager:
         self.closed = threading.Event()
         self.dataset_cache = None
         self.dataset_signature = None
+        self.history_warnings = []
         for folder in self.data_dir.iterdir():
-            if not folder.is_dir() or not ID_PATTERN.fullmatch(folder.name):
+            if not folder.is_dir() or folder.is_symlink() or not ID_PATTERN.fullmatch(folder.name):
                 continue
             try:
-                job = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
-                if job.get("id") != folder.name:
-                    continue
+                job = read_json_object(folder / "metadata.json")
+                if (job.get("id") != folder.name or not isinstance(job.get("status"), str)
+                        or job["status"] not in STATUSES or not isinstance(job.get("created_at"), str)
+                        or not job["created_at"]):
+                    raise ValueError("Некорректные идентификатор, статус или дата запуска.")
+                job["config"] = validate_config(job.get("config"))
+                job["mode"] = job["config"]["mode"]
+                for key, default in (("progress", {}), ("summary", {}), ("events", [])):
+                    job.setdefault(key, default)
+                    if not isinstance(job[key], type(default)):
+                        raise ValueError(f"Некорректное поле истории: {key}.")
+                if not all(isinstance(event, dict) for event in job["events"]):
+                    raise ValueError("Некорректный журнал событий.")
                 if job.get("status") in ACTIVE:
                     job.update(status="interrupted", finished_at=now(), error="Приложение завершилось до окончания запуска. Запустите эксперимент повторно.")
-                    write_json(folder / "metadata.json", job)
+                    self._save_terminal(job)
                 self.jobs[folder.name] = job
-            except (OSError, ValueError, TypeError):
+            except (OSError, ValueError, TypeError, RecursionError) as exc:
+                self.history_warnings.append(f"История {folder.name} не прочитана: {exc}. Файлы сохранены без изменений.")
                 continue
         self.thread = threading.Thread(target=self._work, name="campaign-job-queue", daemon=True)
         self.thread.start()
 
     def _save(self, job):
         write_json(self.data_dir / job["id"] / "metadata.json", job)
+
+    def _save_terminal(self, job):
+        """A full/read-only disk must not prevent cancellation or kill the queue."""
+        try:
+            self._save(job)
+        except OSError as exc:
+            note = f"Не удалось сохранить состояние на диск: {exc}"
+            job["error"] = f"{job['error']} {note}" if job.get("error") else note
 
     def _public(self, job, detail=False):
         result = copy.deepcopy(job)
@@ -104,9 +137,9 @@ class Manager:
             result_path = self.data_dir / job["id"] / "result.json"
             if result_path.exists():
                 try:
-                    result["result"] = json.loads(result_path.read_text(encoding="utf-8"))
-                except (OSError, ValueError):
-                    pass
+                    result["result"] = read_json_object(result_path)
+                except (OSError, ValueError, RecursionError) as exc:
+                    result["result_error"] = f"Не удалось прочитать сохранённый результат: {exc}"
         else:
             result.pop("events", None)
         return result
@@ -135,8 +168,8 @@ class Manager:
                                 "max_pilots": config["max_pilots"], "message": "Ожидание свободного исполнителя"},
                    "events": [], "summary": {}}
             (self.data_dir / run_id).mkdir()
-            self.jobs[run_id] = job
             self._save(job)
+            self.jobs[run_id] = job
             self.pending.put(run_id)
             return self._public(job, detail=True)
 
@@ -149,7 +182,7 @@ class Manager:
             if job["status"] in ACTIVE:
                 job.update(status="cancelled", finished_at=now(), error=None)
                 job["progress"]["message"] = "Остановлено пользователем"
-                self._save(job)
+                self._save_terminal(job)
                 process = self.processes.get(run_id)
             response = self._public(job, detail=True)
         if process is not None and process.poll() is None:
@@ -201,7 +234,7 @@ class Manager:
                     job = self.jobs[run_id]
                     if job["status"] != "cancelled":
                         job.update(status="failed", finished_at=now(), error=f"{type(exc).__name__}: {exc}")
-                        self._save(job)
+                        self._save_terminal(job)
             finally:
                 self.pending.task_done()
 
@@ -265,7 +298,7 @@ class Manager:
             reader.join(timeout=1)
             result = None
             if (directory / "result.json").exists():
-                result = json.loads((directory / "result.json").read_text(encoding="utf-8"))
+                result = read_json_object(directory / "result.json")
             with self.lock:
                 job = self.jobs[run_id]
                 if job["status"] != "cancelled":
@@ -288,17 +321,45 @@ class Manager:
                 self.processes.pop(run_id, None)
 
     def dataset(self):
-        from setup_case import DATA_FILES
+        from setup_case import ARCHIVE_SHA256, DATA_FILES
         with self.dataset_lock:
-            files = [{"name": name, "exists": (self.root / name).is_file(),
-                      "size": (self.root / name).stat().st_size if (self.root / name).is_file() else 0} for name in DATA_FILES]
-            signature = tuple((row["name"], row["size"], (self.root / row["name"]).stat().st_mtime_ns if row["exists"] else 0) for row in files)
+            files, signature, errors = [], [], []
+            archive = self.root / "vendor" / "beeline_case_participants.zip"
+            for name in (*DATA_FILES, "vendor/beeline_case_participants.zip"):
+                path = self.root / name
+                try:
+                    stat = path.stat() if path.is_file() else None
+                except OSError as exc:
+                    stat = None
+                    errors.append(f"{name}: {exc}")
+                signature.append((name, stat.st_size if stat else 0, stat.st_mtime_ns if stat else 0))
+                if name in DATA_FILES:
+                    files.append({"name": name, "exists": stat is not None, "size": stat.st_size if stat else 0,
+                                  "valid": False, "error": "Не проверен: нужен полный набор CSV и оригинальный архив."
+                                  if stat else "CSV отсутствует или недоступен для чтения."})
+            signature = tuple(signature)
             if signature == self.dataset_signature:
                 return copy.deepcopy(self.dataset_cache)
             result = {"ready": all(row["exists"] for row in files), "files": files, "customers": 0,
                       "tariff_count": 0, "baseline_arpu": 0.0, "segments": {"arpu": [], "data": [], "call": []}, "tariffs": []}
+            missing = [row["name"] for row in files if not row["exists"]]
+            if missing:
+                result["error"] = "Не найдены CSV: " + ", ".join(missing) + ". Нажмите «Подготовить данные»."
+            if errors:
+                result.update(ready=False, error="Не удалось прочитать файлы: " + "; ".join(errors))
             if result["ready"]:
                 try:
+                    # The application prepares this exact participant bundle and
+                    # refuses modified CSVs. Check it without mutating a GET.
+                    if hashlib.sha256(archive.read_bytes()).hexdigest() != ARCHIVE_SHA256:
+                        raise ValueError("Контрольная сумма пакета участника не совпадает. Восстановите архив из репозитория.")
+                    with zipfile.ZipFile(archive) as source:
+                        for row in files:
+                            row["valid"] = (self.root / row["name"]).read_bytes() == source.read(row["name"])
+                            row["error"] = None if row["valid"] else "CSV изменён и отличается от оригинального пакета участника."
+                    modified = [row["name"] for row in files if not row["valid"]]
+                    if modified:
+                        raise ValueError("Изменены CSV: " + ", ".join(modified) + ". Сохраните копии этих файлов и уберите их из каталога проекта, затем нажмите «Подготовить данные».")
                     import pandas as pd
                     profile = pd.read_csv(self.root / "customer_profile.csv")
                     tariffs = pd.read_csv(self.root / "data" / "dict_tariff.csv")
@@ -306,8 +367,11 @@ class Manager:
                                   tariffs=json.loads(tariffs.to_json(orient="records")))
                     for kind in ("arpu", "data", "call"):
                         result["segments"][kind] = [{"name": str(name), "count": int(count)} for name, count in profile[kind + "_segment"].value_counts().items()]
-                except (OSError, ValueError, KeyError) as exc:
+                except (OSError, ValueError, KeyError, TypeError, zipfile.BadZipFile) as exc:
                     result.update(ready=False, error=f"Не удалось прочитать данные: {exc}")
+                    for row in files:
+                        if not row["valid"] and row["error"].startswith("Не проверен:"):
+                            row["error"] = f"Не проверен: {exc}"
             self.dataset_cache, self.dataset_signature = result, signature
             return copy.deepcopy(result)
 
@@ -316,7 +380,10 @@ class Manager:
         with self.lock:
             if any(job["status"] in ACTIVE for job in self.jobs.values()):
                 raise RuntimeError("Дождитесь окончания запусков перед подготовкой данных.")
-            restore(self.root, self.root / "vendor" / "beeline_case_participants.zip")
+            try:
+                restore(self.root, self.root / "vendor" / "beeline_case_participants.zip")
+            except FileExistsError as exc:
+                raise ValueError("CSV изменены и не были перезаписаны. Сохраните их копии и уберите изменённые файлы из каталога проекта перед восстановлением. " + str(exc)) from exc
             self.dataset_signature = None
         return self.dataset()
 
@@ -327,7 +394,7 @@ class Manager:
                 "runs": {"total": len(runs), "completed": sum(run["status"] == "completed" for run in runs),
                          "active": sum(run["status"] in ACTIVE for run in runs), "failed": sum(run["status"] in {"failed", "interrupted"} for run in runs)},
                 "latest_run": next((run for run in runs if run["status"] == "completed" and run["mode"] != "tests"), None),
-                "recent_runs": runs[:5]}
+                "recent_runs": runs[:5], "history_warnings": list(self.history_warnings)}
 
     def close(self):
         self.closed.set()
@@ -434,16 +501,22 @@ def make_server(manager, host="127.0.0.1", port=8765):
                 if not 0 < length <= 65536:
                     raise ValueError("Некорректный размер JSON-запроса.")
                 payload = json.loads(self.rfile.read(length).decode("utf-8"), parse_constant=lambda value: (_ for _ in ()).throw(ValueError("NaN и Infinity не разрешены.")))
+                if not isinstance(payload, dict):
+                    raise ValueError("Тело запроса должно быть JSON-объектом.")
                 path = unquote(urlsplit(self.path).path)
                 if path == "/api/runs":
                     return self._json(202, {"run": manager.create(payload)})
                 match = re.fullmatch(r"/api/runs/([0-9a-f]{32})/cancel", path)
                 if match:
+                    if payload:
+                        raise ValueError("Остановка запуска принимает пустой JSON-объект {}.")
                     return self._json(200, {"run": manager.cancel(match[1])})
                 if path == "/api/data/prepare":
+                    if payload:
+                        raise ValueError("Подготовка данных принимает пустой JSON-объект {}.")
                     return self._json(200, {"dataset": manager.prepare_data()})
                 return self._json(404, {"error": "Действие не найдено."})
-            except (ValueError, UnicodeError) as exc:
+            except (ValueError, UnicodeError, RecursionError) as exc:
                 self._json(400, {"error": str(exc)})
             except KeyError as exc:
                 self._json(404, {"error": str(exc.args[0])})

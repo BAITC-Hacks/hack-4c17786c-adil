@@ -30,7 +30,7 @@
         "best_seed": 7,
         "best_net": 5885.657181821118,
         "total_pilots": 4,
-        "total_runtime_seconds": 17.348821000001408
+        "total_runtime_seconds": 19.671977900001366
       },
       "artifacts": [
         "campaign_plan.csv",
@@ -38,7 +38,7 @@
         "report.json",
         "result.json"
       ],
-      "runtime_seconds": 18.40600000000086
+      "runtime_seconds": 20.89099999999962
     },
     {
       "mode": "batch",
@@ -60,7 +60,7 @@
         "best_seed": 42,
         "best_net": 211426.80537042208,
         "total_pilots": 40,
-        "total_runtime_seconds": 2.4084607000004326
+        "total_runtime_seconds": 2.457644199999777
       },
       "artifacts": [
         "campaign_plan.csv",
@@ -85,8 +85,8 @@
       "summary": {
         "trials": 0,
         "positive_runs": 0,
-        "total_runtime_seconds": 10.549252100001468,
-        "tests_run": 21,
+        "total_runtime_seconds": 17.02894010000091,
+        "tests_run": 45,
         "tests_passed": true,
         "failures": 0,
         "errors": 0,
@@ -96,7 +96,7 @@
         "result.json",
         "tests.txt"
       ],
-      "runtime_seconds": 11.031999999999243
+      "runtime_seconds": 17.389999999999418
     }
   ]
 }
