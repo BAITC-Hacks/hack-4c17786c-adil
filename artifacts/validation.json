@@ -1,0 +1,137 @@
+{
+  "python": "3.12.14",
+  "numpy": "2.3.5",
+  "pandas": "3.0.1",
+  "participant_archive_sha256": "df1d955fb97816ff6de8ceb142ed589915d969f43f840a650dcdfbe12734f20b",
+  "participant_sources_unchanged": [
+    "environment.py",
+    "mock_environment.py",
+    "scoring_core.py",
+    "local_eval.py",
+    "make_submission.py",
+    "agent_template.py",
+    "PARTICIPANT_GUIDE.md"
+  ],
+  "submission_reproducible": true,
+  "submission_sha256_lf": "b486c5aa5dc0631f95dd135505fed6ef7f29ba24fba92a76b4a9bfa9ed4f7f5b",
+  "single_run": {
+    "seed": 42,
+    "net_arpu_gain": 211426.80537042208,
+    "total_cost": 18288.0,
+    "total_contacts": 3622,
+    "pilots": 20,
+    "final_campaigns": 1,
+    "status": "PASS",
+    "runtime_seconds": 1.094000000000051
+  },
+  "stability_runs": [
+    {
+      "seed": 0,
+      "net_arpu_gain": 536726.412615825,
+      "total_cost": 18680.0,
+      "total_contacts": 4320,
+      "pilots": 20,
+      "final_campaigns": 1,
+      "status": "PASS",
+      "runtime_seconds": 1.0
+    },
+    {
+      "seed": 1,
+      "net_arpu_gain": 656639.8203133931,
+      "total_cost": 49640.0,
+      "total_contacts": 4320,
+      "pilots": 20,
+      "final_campaigns": 1,
+      "status": "PASS",
+      "runtime_seconds": 1.125
+    },
+    {
+      "seed": 2,
+      "net_arpu_gain": 762951.8702543452,
+      "total_cost": 56236.0,
+      "total_contacts": 13809,
+      "pilots": 20,
+      "final_campaigns": 5,
+      "status": "PASS",
+      "runtime_seconds": 1.5470000000004802
+    },
+    {
+      "seed": 3,
+      "net_arpu_gain": 1795.7631431834307,
+      "total_cost": 21000.0,
+      "total_contacts": 5550,
+      "pilots": 20,
+      "final_campaigns": 1,
+      "status": "PASS",
+      "runtime_seconds": 0.9679999999998472
+    },
+    {
+      "seed": 4,
+      "net_arpu_gain": 54691.41967505909,
+      "total_cost": 48756.0,
+      "total_contacts": 11239,
+      "pilots": 20,
+      "final_campaigns": 3,
+      "status": "PASS",
+      "runtime_seconds": 1.2039999999997235
+    },
+    {
+      "seed": 5,
+      "net_arpu_gain": 224706.10181749915,
+      "total_cost": 41536.0,
+      "total_contacts": 9434,
+      "pilots": 20,
+      "final_campaigns": 2,
+      "status": "PASS",
+      "runtime_seconds": 1.1090000000003783
+    },
+    {
+      "seed": 6,
+      "net_arpu_gain": 639238.1117610501,
+      "total_cost": 38384.0,
+      "total_contacts": 9046,
+      "pilots": 20,
+      "final_campaigns": 2,
+      "status": "PASS",
+      "runtime_seconds": 1.8279999999995198
+    },
+    {
+      "seed": 7,
+      "net_arpu_gain": 536095.2188254041,
+      "total_cost": 18680.0,
+      "total_contacts": 4320,
+      "pilots": 20,
+      "final_campaigns": 1,
+      "status": "PASS",
+      "runtime_seconds": 1.530999999999949
+    },
+    {
+      "seed": 8,
+      "net_arpu_gain": 881962.479699302,
+      "total_cost": 45380.0,
+      "total_contacts": 11295,
+      "pilots": 20,
+      "final_campaigns": 4,
+      "status": "PASS",
+      "runtime_seconds": 2.141000000000531
+    },
+    {
+      "seed": 9,
+      "net_arpu_gain": 202068.75921026632,
+      "total_cost": 40988.0,
+      "total_contacts": 10397,
+      "pilots": 20,
+      "final_campaigns": 3,
+      "status": "PASS",
+      "runtime_seconds": 2.344000000000051
+    }
+  ],
+  "summary": {
+    "runs": 10,
+    "positive_runs": 10,
+    "minimum_net": 1795.7631431834307,
+    "median_net": 536410.8157206145,
+    "maximum_net": 881962.479699302
+  },
+  "scope": "Synthetic local effects only; these scores do not predict the hidden judging result."
+}

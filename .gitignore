@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.coverage
+artifacts/*.log
+.publish/
+# Exact originals are stored in vendor/beeline_case_participants.zip.
+customer_profile.csv
+tariff_dictionary.csv
+feature_dictionary.csv
+data/*.csv
+PARTICIPANT_GUIDE.pdf
